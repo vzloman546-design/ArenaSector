@@ -323,9 +323,22 @@ function renumberRow(row){
   const ordered=[...row.seats].sort((a,b)=>a.x-b.x||row.seats.indexOf(a)-row.seats.indexOf(b));
   ordered.forEach((seat,i)=>seat.number=String(direction==='ltr'?i+1:ordered.length-i));
 }
+// Add new seats next to the physical edge of their own row, retaining vertical offsets.
+function appendSeatToRow(row){
+  const rightToLeft=rowNumberDirection(row)==='rtl';
+  const nextNumber=Math.max(0,...row.seats.map(seat=>Number(seat.number)).filter(Number.isInteger))+1;
+  const x=!row.seats.length?0:rightToLeft
+    ? Math.min(...row.seats.map(seat=>seat.x))-32
+    : Math.max(...row.seats.map(seat=>seat.x+seatWidth(seat)))+6;
+  // Median offset preserves the vertical shift of the row even if some seats were moved individually.
+  const y=rowLabelOffset(row);
+  const seat={id:uid(),number:String(nextNumber),x,y};
+  row.seats.push(seat);
+  return seat;
+}
 function renderSeatEditor(){const el=$('seatEditor'),r=getRow(),s=getSeat();if(!r){el.hidden=true;return}el.hidden=false;let html=`<div class="section-title"><h3>Ряд ${safeText(r.label)} · ${r.seats.length} мест</h3><button class="btn small" id="addSeat">＋ Добавить место</button></div><div class="box-row" style="margin-bottom:8px"><button class="btn small" id="reverseNumbers">⇄ ${rowNumberDirection(r)==='rtl'?'Пронумеровать слева направо':'Пронумеровать справа налево'}</button><button class="btn small" id="straightenRow">Выровнять ряд</button></div>`;
 if(s){html+=`<div style="border-top:1px solid #d6e4f1;padding-top:10px"><strong>Выбрано место ${safeText(s.number)}</strong>${s.span>1?'<div class="tip">Объединённое место занимает '+s.span+' стандартных позиций</div>':''}<div class="form-grid"><div class="control"><label for="seatNumber">Номер места</label><input id="seatNumber" class="field" maxlength="16" value="${safeText(s.number)}"></div><div class="control"><label>Сдвиг по горизонтали</label><div class="box-row"><button class="btn small" id="seatLeft">← ½</button><button class="btn small" id="seatRight">½ →</button></div></div><div class="control"><label>Сдвиг по вертикали</label><div class="box-row"><button class="btn small" id="seatUp">↑ ½</button><button class="btn small" id="seatDown">½ ↓</button></div></div></div><div class="box-row" style="margin-top:10px"><button class="btn small" id="gapAfter">＋ Проход после места</button><button class="btn small" id="removeGap">− Убрать проход</button><button class="btn small danger" id="deleteSeat">Удалить кресло</button></div></div>`}else{html+='<p class="tip">'+(multiSelectEnabled?'Отметь соседние кресла в одном ряду и нажми «Объединить».':'Нажми на кресло, чтобы изменить номер, положение или проход после него.')+'</p>'}el.innerHTML=html;
-$('addSeat').onclick=()=>{const last=r.seats.at(-1);const num=Math.max(0,...r.seats.map(x=>Number(x.number)).filter(Number.isFinite))+1;r.seats.push({id:uid(),number:String(num),x:last?last.x+seatWidth(last)+6:0,y:0});selectedSeat=r.seats.at(-1).id;changed()};$('reverseNumbers').onclick=()=>{renumberRow(r);changed()};$('straightenRow').onclick=()=>{if(!confirm('Выровнять все кресла в выбранном ряду? Индивидуальные смещения и проходы будут удалены.'))return;let nextX=0;r.seats.forEach(x=>{x.x=nextX;x.y=0;nextX+=seatWidth(x)+6});changed()};if(!s)return;
+$('addSeat').onclick=()=>{selectedSeat=appendSeatToRow(r).id;changed()};$('reverseNumbers').onclick=()=>{renumberRow(r);changed()};$('straightenRow').onclick=()=>{if(!confirm('Выровнять все кресла в выбранном ряду? Индивидуальные смещения и проходы будут удалены.'))return;let nextX=0;r.seats.forEach(x=>{x.x=nextX;x.y=0;nextX+=seatWidth(x)+6});changed()};if(!s)return;
 $('seatNumber').onchange=e=>{const v=e.target.value.trim();if(!v){toast('Номер не может быть пустым');renderSeatEditor();return}if(r.seats.some(x=>x.id!==s.id&&x.number===v)){toast('Место с таким номером уже есть в ряду');renderSeatEditor();return}s.number=v;changed()};
 for(const [id,dx,dy] of [['seatLeft',-16,0],['seatRight',16,0],['seatUp',0,-16],['seatDown',0,16]])$(id).onclick=()=>{s.x+=dx;s.y+=dy;changed()};
 $('gapAfter').onclick=()=>{let index=r.seats.findIndex(x=>x.id===s.id);r.seats.slice(index+1).forEach(x=>x.x+=24);changed()};$('removeGap').onclick=()=>{let index=r.seats.findIndex(x=>x.id===s.id);r.seats.slice(index+1).forEach(x=>x.x-=24);changed()};$('deleteSeat').onclick=()=>{if(!confirm(`Удалить кресло ${s.number} из ряда ${r.label}?`))return;r.seats=r.seats.filter(x=>x.id!==s.id);selectedSeat=null;changed()}}
