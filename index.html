@@ -8,6 +8,7 @@
   <title>ArenaSector — редактор посадочных мест</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="stylesheet" href="./reports.css">
   <style>
 /* Map lodge bands and compact lodge selection dialog */
 .stadium.original .map-lodge { cursor: pointer; }
@@ -143,13 +144,48 @@
 
     </aside>
     <main class="workspace">
-      <div class="panel"><div class="workspace-head"><div><h2 id="pageTitle">Схема стадиона</h2><p id="pageSubtitle">Нажмите сектор на карте или выберите его из списка</p></div><nav class="tabs" aria-label="Режим работы"><button class="tab active" data-tab="map">Карта</button><button class="tab" data-tab="edit">Редактор</button><button class="tab" data-tab="view">Просмотр</button></nav></div></div>
+      <div class="panel"><div class="workspace-head"><div><h2 id="pageTitle">Схема стадиона</h2><p id="pageSubtitle">Нажмите сектор на карте или выберите его из списка</p></div><nav class="tabs" aria-label="Режим работы"><button class="tab active" data-tab="map">Карта</button><button class="tab" data-tab="edit">Редактор</button><button class="tab" data-tab="view">Просмотр</button><button class="tab" data-tab="reports">Отчёты</button></nav></div></div>
       <section id="mapView" class="view active panel"><div class="panel-pad"><div class="section-title"><h2>Общая схема стадиона</h2><small>Нажми на номер сектора</small></div><div class="map-wrap"><svg id="stadiumMap" class="stadium original" viewBox="0 0 852 768" role="img" aria-label="Схема стадиона с кликабельными секторами"></svg></div><div class="map-help"><div class="legend"><span><i class="dot" style="background:var(--A)"></i>A · запад</span><span><i class="dot" style="background:var(--B)"></i>B · север</span><span><i class="dot" style="background:var(--C)"></i>C · восток</span><span><i class="dot" style="background:var(--D)"></i>D · юг</span></div><span>План стадиона — из предоставленного изображения</span></div></div></section>
       <section id="editView" class="view"><div class="panel"><div class="panel-pad"><div class="section-title"><h2 id="editTitle">Редактирование сектора</h2><button class="btn small" data-tab-go="view">👁 Просмотр</button></div><div id="editStats" class="quick-summary">0 рядов · 0 мест</div></div></div>
         <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Ряды</h2><small>Первый ряд снизу, у поля</small></div><div id="rowList" class="row-list"></div><div class="new-row" style="margin-top:12px"><div class="control"><label for="newRowLabel">Номер ряда</label><input id="newRowLabel" class="field" type="text" maxlength="20" value="1"></div><div class="control"><label for="newRowCount">Мест в ряду</label><input id="newRowCount" class="field" type="number" min="1" max="250" value="20"></div><button class="btn primary" id="addRow">＋ Добавить ряд</button></div></div></div>
         <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Расстановка мест</h2><small>Выбери ряд или отдельное кресло на схеме</small></div><div class="preview-toolbar"><div class="box-row"><button class="btn small" id="shiftRowLeft" title="Сдвинуть выбранный ряд влево на половину шага между креслами">Ряд ← ½ места</button><button class="btn small" id="shiftRowRight" title="Сдвинуть выбранный ряд вправо на половину шага между креслами">Ряд ½ места →</button><button class="btn small" id="shiftRowUp" title="Сдвинуть выбранный ряд вверх на 16 единиц">Ряд ↑ ½ места</button><button class="btn small" id="shiftRowDown" title="Сдвинуть выбранный ряд вниз на 16 единиц">Ряд ½ места ↓</button></div><div class="box-row"><button type="button" class="btn small" id="multiSeatMode" aria-pressed="false">▣ Выбрать несколько мест</button><button type="button" class="btn primary small" id="mergeSeats" hidden disabled>Объединить (0)</button></div><div class="zoom-control"><button class="btn small icon" id="zoomEditOut" title="Уменьшить">−</button><output id="editZoomLabel">100%</output><button class="btn small icon" id="zoomEditIn" title="Увеличить">＋</button></div></div><div class="preview-frame"><div id="editCanvas" class="preview-inner"></div></div><div id="seatEditor" class="seat-editor" hidden></div><p class="tip">Кресла можно перетаскивать мышью или пальцем. Для точной корректировки нажми на кресло и используй кнопки перемещения. Пробел между креслами добавляется отдельной кнопкой.</p></div></div>
       </section>
       <section id="viewView" class="view panel"><div class="panel-pad"><div class="section-title"><div><h2 id="viewTitle">Просмотр сектора</h2><small>Первый ряд у поля · схема для Билетона</small></div><button class="btn" id="fullscreenBtn">⛶ На весь экран</button></div><div class="preview-toolbar"><div id="viewStats" class="muted" style="font-size:12px"></div><div class="zoom-control"><button class="btn small icon" id="zoomViewOut">−</button><output id="viewZoomLabel">100%</output><button class="btn small icon" id="zoomViewIn">＋</button></div></div><div class="preview-frame" style="height:min(62vh,610px)"><div id="viewCanvas" class="preview-inner"></div></div><p class="tip">На телефоне можно прокручивать увеличенную схему по горизонтали и вертикали. Для изменения нажми вкладку «Редактор».</p></div></section>
+      <section id="reportsView" class="view panel" aria-label="Отчётность по местам">
+        <div class="panel-pad">
+          <div class="section-title">
+            <div><h2>Отчёты по посадочным местам</h2><p class="report-subtitle">Количество секторов, рядов и мест по текущему проекту. Отчёты формируются на устройстве, без сервера.</p></div>
+          </div>
+          <div class="report-actions">
+            <div class="control"><label for="reportStandFilter">Для какой трибуны</label>
+              <select id="reportStandFilter" class="field">
+                <option value="all">Все трибуны</option>
+                <option value="A">A · Запад</option>
+                <option value="B">B · Север</option>
+                <option value="C">C · Восток</option>
+                <option value="D">D · Юг</option>
+              </select>
+            </div>
+            <button type="button" class="btn primary" id="reportSummaryPdf">↓ Скачать сводный PDF</button>
+            <button type="button" class="btn" id="reportDetailedPdf">↓ Скачать подробный PDF</button>
+          </div>
+          <p id="reportState" class="report-state" aria-live="polite"></p>
+          <div id="reportStats" class="report-stat-grid"></div>
+          <p id="reportDetails" class="report-subtitle"></p>
+          <div class="section-title"><h3>По трибунам</h3><small>Количество заполненных и пустых секторов</small></div>
+          <div class="report-table-wrap"><table class="report-table">
+            <thead><tr><th>Трибуна</th><th class="num">Секторов</th><th class="num">С местами</th><th class="num">Рядов</th><th class="num">Мест</th></tr></thead>
+            <tbody id="reportStandBody"></tbody>
+          </table></div>
+          <div class="section-title"><h3>По секторам</h3><small>Нажми на номер сектора, чтобы перейти в редактор</small></div>
+          <div class="report-table-wrap"><table class="report-table">
+            <thead><tr><th>Трибуна</th><th>Сектор</th><th class="num">Рядов</th><th class="num">Мест</th><th class="num">Позиций</th></tr></thead>
+            <tbody id="reportSectorBody"></tbody>
+          </table></div>
+          <p class="report-note">«Мест» — количество отдельных посадочных мест для билетирования. «Позиций» — количество стандартных кресельных позиций с учётом объединённых мест. Сектор «Ложи» — группа для навигации, в отчёте учитываются реальные сектора лож отдельно.</p>
+          <p class="report-note" id="reportGeneratedAt" style="margin-top:8px"></p>
+        </div>
+      </section>
       <footer class="footer">ArenaSector · PNG всех заполненных секторов выгружаются одним ZIP-архивом · Проект хранится на устройстве</footer>
     </main>
   </div>
@@ -225,7 +261,7 @@ function dbPut(value){return new Promise((resolve,reject)=>{const tx=db.transact
 function persist(){project.updatedAt=new Date().toISOString();const snapshot=structuredClone(project);savePending=true;$('saveState').textContent='Сохранение…';writeQueue=writeQueue.catch(()=>{}).then(async()=>{if(!db)throw new Error('Нет доступа к локальному хранилищу');await dbPut(snapshot);savePending=false;$('saveState').textContent='● Сохранено на устройстве'}).catch(err=>{savePending=false;$('saveState').textContent='⚠ Не сохранено';toast('Не удалось сохранить данные. Сделай экспорт проекта. '+err.message)});return writeQueue}
 function changed(rebuild=true){persist();renderSummary();renderSectorList();if(rebuild)renderEditor()}
 function countSeats(section){return section.rows.reduce((n,row)=>n+row.seats.length,0)}
-function setMode(next){mode=next;$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===next));$$('.view').forEach(v=>v.classList.toggle('active',v.id===next+'View'));if(next==='map')renderMap();if(next==='edit')renderEditor();if(next==='view')renderPreview('view');$('pageTitle').textContent=next==='map'?'Схема стадиона':`Трибуна ${getSector().stand} · сектор ${chosen}`;$('pageSubtitle').textContent=next==='map'?'Выберите сектор на общей карте или из списка':next==='edit'?'Ввод рядов и настройка расположения кресел':'Проверка итоговой схемы сектора';window.scrollTo({top:0,behavior:'instant'})}
+function setMode(next){mode=next;$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===next));$$('.view').forEach(v=>v.classList.toggle('active',v.id===next+'View'));if(next==='map')renderMap();if(next==='edit')renderEditor();if(next==='view')renderPreview('view');if(next==='reports'&&typeof window.renderReports==='function')window.renderReports();$('pageTitle').textContent=next==='map'?'Схема стадиона':next==='reports'?'Отчётность':`Трибуна ${getSector().stand} · сектор ${chosen}`;$('pageSubtitle').textContent=next==='map'?'Выберите сектор на общей карте или из списка':next==='edit'?'Ввод рядов и настройка расположения кресел':next==='reports'?'Статистика секторов и формирование PDF-отчётов':'Проверка итоговой схемы сектора';window.scrollTo({top:0,behavior:'instant'})}
 function choose(id,next='edit'){if(!project.sectors[id])return;multiSelectEnabled=false;multiSelectedSeatIds.clear();chosen=id;selectedRow=getSector().rows[0]?.id||null;selectedSeat=null;renderSummary();renderSectorList();setMode(next);if(window.innerWidth<=710)$('sidebar').classList.remove('expanded')}
 function renderSummary(){
  const sector=getSector();
@@ -528,5 +564,6 @@ start();
 })();
 
 </script>
+<script src="./reports.js"></script>
 </body>
 </html>
