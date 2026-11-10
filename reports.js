@@ -28,7 +28,7 @@
       };
     });
     const total = array => ({
-      sectors:array.length,
+      sectorCount:array.length,
       completed:array.filter(x=>x.seats>0).length,
       rows:array.reduce((sum,x)=>sum+x.rowCount,0),
       seats:array.reduce((sum,x)=>sum+x.seats,0),
@@ -64,9 +64,9 @@
       '<div class="report-stat"><strong>'+number(value)+'</strong><span>'+label+'</span></div>').join('');
     $('reportDetails').textContent='Занятых стандартных позиций: '+number(data.positions)+
       ' · Объединённых мест: '+number(data.merged)+
-      ' · Пустых секторов: '+number(data.sectors-data.completed)+'.';
+      ' · Пустых секторов: '+number(data.sectors.length-data.completed)+'.';
     $('reportStandBody').innerHTML=data.stands.map(stand=>'<tr><td>'+standHTML(stand.stand)+
-      '</td><td class="num">'+number(stand.sectors)+'</td><td class="num">'+number(stand.completed)+
+      '</td><td class="num">'+number(stand.sectorCount)+'</td><td class="num">'+number(stand.completed)+
       '</td><td class="num">'+number(stand.rows)+'</td><td class="num">'+number(stand.seats)+'</td></tr>').join('');
     $('reportSectorBody').innerHTML=data.sectors.map(sector=>
       '<tr><td>'+standHTML(sector.stand)+'</td><td><button type="button" class="sector-link" data-report-sector="'+
@@ -249,17 +249,17 @@
     const pdf=new ReportPages(data,detailed);
     pdf.heading('Общая информация');
     pdf.metrics([
-      ['Секторов',data.sectors],
+      ['Секторов',data.sectors.length],
       ['С местами',data.completed],
       ['Рядов',data.rows],
       ['Мест',data.seats]
     ]);
     pdf.note('Занятых позиций: '+number(data.positions)+
       ' · Объединённых мест: '+number(data.merged)+
-      ' · Без мест: '+number(data.sectors-data.completed));
+      ' · Без мест: '+number(data.sectors.length-data.completed));
     pdf.heading('По трибунам');
     pdf.table(['Трибуна','Название','Секторов','С местами','Рядов','Мест'],
-      data.stands.map(x=>[x.stand,x.name,number(x.sectors),number(x.completed),number(x.rows),number(x.seats)]),
+      data.stands.map(x=>[x.stand,x.name,number(x.sectorCount),number(x.completed),number(x.rows),number(x.seats)]),
       [0.10,0.20,0.17,0.18,0.16,0.19]);
     pdf.heading('По секторам');
     pdf.table(['Трибуна','Сектор','Рядов','Мест','Позиций','Объединено'],
@@ -301,7 +301,7 @@
       const datePart=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
       const fileName='ArenaSector-'+(detailed?'detailed':'summary')+'-'+filter+'-'+datePart+'.pdf';
       downloadBlob(blob,fileName);
-      status.textContent='PDF сформирован: '+fileName+' · '+number(data.sectors)+' секторов.';
+      status.textContent='PDF сформирован: '+fileName+' · '+number(data.sectors.length)+' секторов.';
     }catch(error){
       status.textContent='Ошибка PDF: '+(error?.message||String(error));
       toast('Не удалось сформировать отчёт: '+(error?.message||String(error)));
