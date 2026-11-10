@@ -44,7 +44,7 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
 'use strict';
-const STANDS={A:{color:'#2c78b6',title:'Запад',sectors:[...range(101,122),...range(201,215),...range(401,411),'VIP']},B:{color:'#3ea13b',title:'Север',sectors:[...range(139,147),...range(239,249),...range(434,440)]},C:{color:'#b40029',title:'Восток',sectors:[...range(130,138),...range(226,238),...range(419,433)]},D:{color:'#f1ae00',title:'Юг',sectors:[...range(123,129),...range(216,225),...range(412,418)]}};
+const STANDS={A:{color:'#2c78b6',title:'Запад',sectors:[...range(101,122),...range(201,215),...range(401,411),'VIP']},B:{color:'#3ea13b',title:'Север',sectors:[...range(141,147),...range(239,249),...range(434,440)]},C:{color:'#b40029',title:'Восток',sectors:[...range(130,140),...range(226,238),...range(419,433)]},D:{color:'#f1ae00',title:'Юг',sectors:[...range(123,129),...range(216,225),...range(412,418)]}};
 function range(from,to){return Array.from({length:to-from+1},(_,i)=>String(from+i))}
 const STATUS={'not-started':'Не начат',progress:'В процессе',checked:'Проверен',ready:'Готов'};
 const $=id=>document.getElementById(id), $$=sel=>[...document.querySelectorAll(sel)];
