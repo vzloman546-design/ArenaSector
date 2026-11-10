@@ -1,5 +1,5 @@
 // Network-first updates with offline fallback. Local project data is not touched.
-const CACHE = 'arenasector-v14';
+const CACHE = 'arenasector-v15';
 const ASSETS = ['./', './index.html', './reports.js', './reports.css', './icon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
