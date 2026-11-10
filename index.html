@@ -56,6 +56,35 @@
 .lodge-header h2 { font-size: 19px; }
 .lodge-header p { font-size: 12px; color: #728195; margin-top: 5px; }
 .lodge-content { padding: 18px; }
+.lodge-layout { display: flex; gap: 12px; align-items: stretch; }
+.lodge-layout > .lodge-grid { flex: 1; min-width: 0; }
+.lodge-layout[data-field-direction="up"] { flex-direction: column-reverse; }
+.lodge-layout[data-field-direction="down"] { flex-direction: column; }
+.lodge-layout[data-field-direction="right"] { flex-direction: row; }
+.lodge-layout[data-field-direction="left"] { flex-direction: row-reverse; }
+.lodge-field {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: #f3f6fa;
+  border: 1px solid #d7e1eb;
+  border-radius: 8px;
+  color: #415975;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: .065em;
+  white-space: nowrap;
+}
+.lodge-field .field-arrow { font-size: 23px; line-height: 1; }
+.lodge-layout[data-field-direction="right"] .lodge-field,
+.lodge-layout[data-field-direction="left"] .lodge-field {
+  width: 72px;
+  flex-direction: column;
+  gap: 4px;
+}
 .lodge-grid {
   display: grid;
   grid-template-columns: repeat(var(--columns, 7), minmax(0, 1fr));
@@ -337,7 +366,7 @@ start();
   modal.id = 'lodgeDialog';
   modal.className = 'lodge-dialog';
   modal.setAttribute('aria-labelledby', 'lodgeDialogTitle');
-  modal.innerHTML = '<header class="lodge-header"><div><h2 id="lodgeDialogTitle">Ложи</h2><p id="lodgeDialogInfo"></p></div><button type="button" class="btn" id="lodgeClose">Закрыть ✕</button></header><div class="lodge-content"><div class="lodge-grid" id="lodgeGrid"></div></div>';
+  modal.innerHTML = '<header class="lodge-header"><div><h2 id="lodgeDialogTitle">Ложи</h2><p id="lodgeDialogInfo"></p></div><button type="button" class="btn" id="lodgeClose">Закрыть ✕</button></header><div class="lodge-content"><div class="lodge-layout" id="lodgeLayout"><div class="lodge-grid" id="lodgeGrid"></div><div class="lodge-field" id="lodgeField" role="note" aria-label="Направление поля"><span class="field-arrow" aria-hidden="true">↑</span><span>ПОЛЕ</span></div></div></div>';
   document.body.appendChild(modal);
 
   function boxCount(stand) { return LODGES[stand].filter(id => Boolean(project.sectors[id])).length; }
@@ -347,6 +376,12 @@ start();
     const ids = LODGES[stand].filter(id => project.sectors[id]);
     document.getElementById('lodgeDialogTitle').textContent = `Ложи · трибуна ${stand}`;
     document.getElementById('lodgeDialogInfo').textContent = `${STANDS[stand].title} · выбери ложу`;
+    const fieldDirections = { A: ['up','↑','вверх'], B: ['right','→','вправо'], C: ['down','↓','вниз'], D: ['left','←','влево'] };
+    const [fieldDirection, fieldArrow, fieldLabel] = fieldDirections[stand];
+    document.getElementById('lodgeLayout').dataset.fieldDirection = fieldDirection;
+    const field = document.getElementById('lodgeField');
+    field.setAttribute('aria-label', `Поле ${fieldLabel}`);
+    field.querySelector('.field-arrow').textContent = fieldArrow;
     const grid = document.getElementById('lodgeGrid');
     grid.style.setProperty('--columns', String(ids.length + (stand === 'A' ? 1 : 0)));
     grid.innerHTML = ids.map(id => `<button type="button" class="lodge-tile ${id === 'VIP' ? 'lodge-vip' : ''}" data-lodge-sector="${id}" style="--tile-color:${STANDS[stand].color};--tile-text:${stand === 'D' ? '#202532' : '#fff'}" aria-label="${id === 'VIP' ? 'VIP — Ложи' : 'Ложа '+id}">${id === 'VIP' ? 'VIP — Ложи' : id}</button>`).join('');
