@@ -62,9 +62,7 @@
     ];
     container.innerHTML=stats.map(([label,value])=>
       '<div class="report-stat"><strong>'+number(value)+'</strong><span>'+label+'</span></div>').join('');
-    $('reportDetails').textContent='Занятых стандартных позиций: '+number(data.positions)+
-      ' · Объединённых мест: '+number(data.merged)+
-      ' · Пустых секторов: '+number(data.sectors.length-data.completed)+'.';
+    $('reportDetails').textContent='Пустых секторов: '+number(data.sectors.length-data.completed)+'.';
     $('reportStandBody').innerHTML=data.stands.map(stand=>'<tr><td>'+standHTML(stand.stand)+
       '</td><td class="num">'+number(stand.sectorCount)+'</td><td class="num">'+number(stand.completed)+
       '</td><td class="num">'+number(stand.rows)+'</td><td class="num">'+number(stand.seats)+'</td></tr>').join('');
@@ -72,7 +70,7 @@
       '<tr><td>'+standHTML(sector.stand)+'</td><td><button type="button" class="sector-link" data-report-sector="'+
       safeText(sector.id)+'" title="Открыть редактор сектора">'+safeText(sector.id)+(sector.box?' · ложа':'')+
       '</button></td><td class="num">'+number(sector.rowCount)+'</td><td class="num">'+
-      number(sector.seats)+'</td><td class="num">'+number(sector.positions)+'</td></tr>').join('');
+      number(sector.seats)+'</td></tr>').join('');
     $('reportGeneratedAt').textContent='Данные из текущего проекта · обновлено '+
       new Date().toLocaleString('ru-RU')+'.';
   }
@@ -214,7 +212,7 @@
         ctx.fillStyle='#445a72';ctx.font='bold 11px Arial, sans-serif';
         let x=35;
         headers.forEach((label,i)=>{
-          const right=i>=2;
+          const right=i>=2 || (headers.length===2 && i===1);
           ctx.textAlign=right?'right':'left';
           ctx.fillText(label,right?x+columns[i]-7:x+7,this.y+18,columns[i]-14);
           x+=columns[i];
@@ -231,7 +229,7 @@
         ctx.fillStyle='#233a52';ctx.font='12px Arial, sans-serif';
         let x=35;
         row.forEach((cell,i)=>{
-          const right=i>=2;
+          const right=i>=2 || (headers.length===2 && i===1);
           ctx.textAlign=right?'right':'left';
           ctx.fillText(String(cell),right?x+columns[i]-7:x+7,y+17,columns[i]-14);
           x+=columns[i];
@@ -254,18 +252,16 @@
       ['Рядов',data.rows],
       ['Мест',data.seats]
     ]);
-    pdf.note('Занятых позиций: '+number(data.positions)+
-      ' · Объединённых мест: '+number(data.merged)+
-      ' · Без мест: '+number(data.sectors.length-data.completed));
+    pdf.note('Секторов без мест: '+number(data.sectors.length-data.completed));
     pdf.heading('По трибунам');
     pdf.table(['Трибуна','Название','Секторов','С местами','Рядов','Мест'],
       data.stands.map(x=>[x.stand,x.name,number(x.sectorCount),number(x.completed),number(x.rows),number(x.seats)]),
       [0.10,0.20,0.17,0.18,0.16,0.19]);
     pdf.heading('По секторам');
-    pdf.table(['Трибуна','Сектор','Рядов','Мест','Позиций','Объединено'],
+    pdf.table(['Трибуна','Сектор','Рядов','Мест'],
       data.sectors.map(s=>[s.stand,s.id+(s.box?' (ложа)':''),number(s.rowCount),
-        number(s.seats),number(s.positions),number(s.merged)]),
-      [0.11,0.27,0.14,0.14,0.16,0.18]);
+        number(s.seats)]),
+      [0.16,0.38,0.23,0.23]);
     if(detailed){
       pdf.heading('Ряды по секторам');
       const filled=data.sectors.filter(s=>s.rowCount>0);
@@ -274,14 +270,10 @@
         pdf.ensure(100);
         pdf.heading('Трибуна '+sector.stand+' · сектор '+sector.id);
         pdf.note('Рядов: '+number(sector.rowCount)+
-          ' · Мест: '+number(sector.seats)+
-          ' · Занято позиций: '+number(sector.positions));
-        pdf.table(['Ряд','Мест','Позиций','Объединённых','Примечание'],
-          sector.rows.map(row=>[
-            String(row.label),number(row.seats),number(row.positions),number(row.merged),
-            row.seats===0?'Нет мест':row.merged?'Есть широкие места':''
-          ]),
-          [0.17,0.15,0.17,0.23,0.28]);
+          ' · Мест: '+number(sector.seats));
+        pdf.table(['Ряд','Мест'],
+          sector.rows.map(row=>[String(row.label),number(row.seats)]),
+          [0.50,0.50]);
       }
     }
     return pdf.finish();
