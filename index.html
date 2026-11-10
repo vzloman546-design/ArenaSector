@@ -265,7 +265,8 @@ const all=s.rows.flatMap(r=>r.seats);const minX=Math.min(0,...all.map(x=>x.x))-1
 const verticalPositions=s.rows.map((r,ri)=>{const base=49+(s.rows.length-1-ri)*51;return {base,row:r}});
 const topMost=Math.min(...verticalPositions.flatMap(({base,row})=>[base+rowLabelOffset(row)-12,...row.seats.map(seat=>base+seat.y-16)]));
 const bottomMost=Math.max(...verticalPositions.flatMap(({base,row})=>[base+rowLabelOffset(row)+14,...row.seats.map(seat=>base+seat.y+16)]));
-const verticalShift=Math.max(0,38-topMost);
+// Normalize the preview around the actual rows, including when they were all shifted down.
+const verticalShift=38-topMost;
 const h=Math.max(170,Math.ceil(bottomMost+verticalShift+50));
 let out=`<svg xmlns="http://www.w3.org/2000/svg" class="seat-svg ${editable?(multiSelectEnabled?'seat-edit multi-mode':'seat-edit'):''}" viewBox="0 0 ${w} ${h}" width="${w*zoom[kind]}" height="${h*zoom[kind]}" data-base-width="${w}" data-base-height="${h}" role="img" aria-label="Схема сектора ${safeText(chosen)}"><text class="seat-title" x="${w/2}" y="17" text-anchor="middle">ДАЛЬНИЕ РЯДЫ</text>`;
 s.rows.forEach((r,ri)=>{const y=49+(s.rows.length-1-ri)*51;out+=`<text class="seat-row-label" x="9" y="${y+7+rowLabelOffset(r)+verticalShift}">Р ${safeText(r.label)}</text>`;r.seats.forEach(seat=>{out+=`<g class="seat ${editable&&(multiSelectEnabled?multiSelectedSeatIds.has(seat.id):seat.id===selectedSeat)?'selected':''}" data-seat="${seat.id}" data-row="${r.id}" aria-label="Ряд ${safeText(r.label)}, место ${safeText(seat.number)}"><rect class="seat-body" x="${shift+seat.x}" y="${y+seat.y-15+verticalShift}" width="${seatWidth(seat)}" height="28" rx="7"/><text class="seat-text" x="${shift+seat.x+seatWidth(seat)/2}" y="${y+seat.y+verticalShift}">${safeText(seat.number)}</text></g>`})});out+=`<text class="seat-title" x="${w/2}" y="${h-13}" text-anchor="middle">НАПРАВЛЕНИЕ К ПОЛЮ ↓</text></svg>`;return out}
@@ -292,7 +293,9 @@ function drawExportCanvas(id, section){
   const width=Math.ceil(Math.max(480,maxX-minX+204));
   const baseY=index=>108+(rows.length-1-index)*58;
   const lowY=Math.min(...rows.flatMap((row,i)=>row.seats.map(seat=>baseY(i)+seat.y-17)));
-  const shiftY=Math.max(0,90-lowY);
+  // The export must trim blank space above moved rows as well as prevent top clipping.
+  // Negative shift is intentional when the uppermost seat was moved downward.
+  const shiftY=90-lowY;
   const bottomY=Math.max(...rows.flatMap((row,i)=>row.seats.map(seat=>baseY(i)+seat.y+18)))+shiftY;
   const fieldY=bottomY+50,height=Math.ceil(fieldY+80);
   const scale=Math.min(2,14000/width,14000/height);
