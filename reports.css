@@ -1,0 +1,24 @@
+/* Reports are computed from the existing local ArenaSector project. */
+.report-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:end;margin:15px 0}
+.report-actions .control{min-width:210px;flex:1 1 210px;max-width:330px}
+.report-actions .btn{min-height:40px}
+.report-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 16px}
+.report-stat{background:#f6f8fb;border:1px solid #e3eaf1;border-radius:11px;padding:12px}
+.report-stat strong{display:block;color:#1e344f;font-size:23px;font-variant-numeric:tabular-nums}
+.report-stat span{color:#64758b;font-size:12px}
+.report-subtitle{font-size:12px;color:#63768a;line-height:1.5;margin:5px 0 14px}
+.report-table-wrap{width:100%;overflow:auto;border:1px solid #e0e7ef;border-radius:11px;margin:9px 0 18px}
+.report-table{border-collapse:collapse;width:100%;min-width:520px;font-size:13px}
+.report-table th,.report-table td{padding:10px 12px;border-bottom:1px solid #e6ecf3;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums}
+.report-table th{color:#4e627a;background:#f5f8fb;font-weight:700;font-size:12px}
+.report-table tr:last-child td{border-bottom:0}
+.report-table tbody tr:hover{background:#f7fbff}
+.report-table .num{text-align:right}
+.report-table .sector-link{border:0;background:transparent;padding:2px;color:#155e9e;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.report-table .sector-link:hover{color:#0c477b}
+.report-stand-name{font-weight:700;display:inline-flex;align-items:center;gap:7px}
+.report-stand-dot{display:inline-block;width:9px;height:9px;border-radius:3px}
+.report-note{font-size:12px;color:#64758b}
+.report-state{min-height:16px;font-size:12px;color:#476789;margin:6px 0}
+@media(max-width:800px){.report-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.report-actions{flex-direction:column;align-items:stretch}.report-actions .control{width:100%;max-width:none;flex:unset}.report-actions .btn{width:100%}.report-stat{padding:10px}.report-stat strong{font-size:20px}}
