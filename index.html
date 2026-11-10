@@ -28,7 +28,7 @@
   pointer-events: none;
   font-family: Inter,system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 400;
 }
 .lodge-list-item { background: #f8fafc; }
 .lodge-list-chevron { color: #6f8094; font-size: 24px; line-height: 1; }
@@ -367,7 +367,7 @@ start();
       return `<g class="map-lodge ${isCurrent ? 'focused' : ''}" data-lodge-stand="${stand}" tabindex="0" role="button" aria-label="Ложи трибуны ${stand}">
         <title>Ложи · трибуна ${stand}</title>
         <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="${STANDS[stand].color}" />
-        <text x="${cx}" y="${cy}" fill="${stand === 'D' ? '#172532' : '#ffffff'}" text-anchor="middle" dominant-baseline="middle" ${box.rotate ? `transform="rotate(${box.rotate} ${cx} ${cy})"` : ''}>Ложи</text>
+        <text x="${cx}" y="${cy}" fill="#ffffff" text-anchor="middle" dominant-baseline="middle" ${box.rotate ? `transform="rotate(${box.rotate} ${cx} ${cy})"` : ''}>Ложи</text>
       </g>`;
     });
     stadium.insertAdjacentHTML('beforeend', bars.join(''));
