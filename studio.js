@@ -60,6 +60,7 @@
     $s('studioRowsCount').textContent=sector.rows.length+' рядов';
     if(seatDialog.open)syncSeatDialog();
     if(rowDialog.open)renderRowsDialog();
+    if(settingsDialog.open)renderInnerStairs();
   }
   function syncSeatDialog(){
     const row=getRow(),seat=getSeat();
@@ -70,6 +71,10 @@
     $s('studioSeatHeading').textContent='Место '+seat.number;
     $s('studioSeatSubheading').textContent='Ряд '+row.label;
     if(document.activeElement!==$s('studioSeatNumber'))$s('studioSeatNumber').value=seat.number;
+    const pos=rowStairLayout(row,getSector()).ordered.indexOf(seat)+1;
+    const button=$s('studioSeatInnerStair');
+    button.disabled=pos<1||pos>=row.seats.length;
+    button.textContent=(getSector().innerStairs||[]).includes(pos)?'− Убрать лестницу после места':'＋ Лестница после места';
   }
   function rowsFormDefaults(){
     $s('studioNewRowLabel').value=nextRowLabel();
@@ -247,9 +252,65 @@
   }
   $s('studioStairLeft').addEventListener('click',()=>toggleStair('left'));
   $s('studioStairRight').addEventListener('click',()=>toggleStair('right'));
+  function renderInnerStairs(){
+    const sector=getSector();
+    const row=getRow()?.seats.length>=2?getRow():sector.rows.find(r=>r.seats.length>=2);
+    const ordered=row?rowStairLayout(row,sector).ordered:[];
+    const marks=Array.isArray(sector.innerStairs)?sector.innerStairs:[];
+    const select=$s('studioInnerStairAfter');
+    const previous=select.value;
+    const choices=ordered.slice(0,-1).map((seat,i)=>
+      '<option value="'+(i+1)+'">Между '+esc(seat.number)+' и '+esc(ordered[i+1].number)+'</option>'
+    ).join('');
+    if(select.innerHTML!==choices)select.innerHTML=choices;
+    const picked=getSeat()&&getRow()===row?ordered.indexOf(getSeat())+1:0;
+    const preferred=String(picked>0&&picked<ordered.length?picked:previous);
+    if([...select.options].some(option=>option.value===preferred))select.value=preferred;
+    select.disabled=choices.length===0;
+    $s('studioInnerStairAdd').disabled=select.disabled||marks.length>=20;
+    const list=$s('studioInnerStairsList');
+    list.innerHTML=marks.length?marks.map(pos=>{
+      const label=pos<ordered.length
+        ?'Между '+esc(ordered[pos-1].number)+' и '+esc(ordered[pos].number)
+        :'После '+pos+'-го места';
+      return '<div class="studio-inner-stair-item"><span>'+label+'</span>'+
+        '<button type="button" data-inner-stair-remove="'+pos+'" aria-label="Удалить внутреннюю лестницу">✕</button></div>';
+    }).join(''):'';
+  }
+  function setInnerStair(pos,add){
+    const sector=getSector();
+    if(!Number.isInteger(pos)||pos<1||pos>499)return;
+    const marks=new Set(Array.isArray(sector.innerStairs)?sector.innerStairs:[]);
+    if(add){
+      if(marks.has(pos))return;
+      if(marks.size>=20){toast('Не более 20 лестниц в секторе');return;}
+      marks.add(pos);
+    }else{
+      marks.delete(pos);
+    }
+    if(marks.size)sector.innerStairs=[...marks].sort((a,b)=>a-b);
+    else delete sector.innerStairs;
+    changed();
+    if(settingsDialog.open)renderInnerStairs();
+  }
+  $s('studioInnerStairAdd').addEventListener('click',()=>{
+    setInnerStair(Number($s('studioInnerStairAfter').value),true);
+  });
+  $s('studioInnerStairsList').addEventListener('click',event=>{
+    const button=event.target.closest('[data-inner-stair-remove]');
+    if(button)setInnerStair(Number(button.dataset.innerStairRemove),false);
+  });
+  $s('studioSeatInnerStair').addEventListener('click',()=>{
+    const seat=getSeat(),row=getRow();
+    if(!seat||!row)return;
+    const pos=rowStairLayout(row,getSector()).ordered.indexOf(seat)+1;
+    if(pos<1||pos>=row.seats.length)return;
+    setInnerStair(pos,!(getSector().innerStairs||[]).includes(pos));
+  });
   $s('studioOpenSettings').addEventListener('click',()=>{
     $s('stairSide').value=getSector().stairSide||'none';
     syncStairButtons();
+    renderInnerStairs();
     settingsDialog.showModal();
   });
   for(const close of document.querySelectorAll('[data-studio-close]'))
