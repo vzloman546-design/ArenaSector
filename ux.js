@@ -30,6 +30,34 @@
     getTool(){return tool},
     setTool(next){return setTool(next);},
     focusRow(id){return focusRow(id);},
+    selectSeat(rowId,seatId){
+      const row=rowById(rowId);
+      if(!row||!row.seats.some(seat=>seat.id===seatId))return false;
+      if(tool==='row'||tool==='stair'||tool==='pan')setTool('select');
+      selectedRow=rowId;selectedSeat=seatId;
+      selectedRows.clear();stairIndex=-1;
+      multiSelectEnabled=false;multiSelectedSeatIds.clear();
+      renderRowSelectionOnly();renderSeatEditor();renderInspector();openInspector();
+      return true;
+    },
+    selectRow(rowId){
+      const row=rowById(rowId);if(!row)return false;
+      if(tool==='stair'||tool==='pan')setTool('select');
+      selectedRow=rowId;selectedSeat=null;stairIndex=-1;
+      selectedRows=new Set([rowId]);
+      multiSelectEnabled=false;multiSelectedSeatIds.clear();
+      renderRowSelectionOnly();renderSeatEditor();paintRowSelection();renderInspector();openInspector();
+      return true;
+    },
+    selectStair(x){
+      const cuts=verticalStairCuts(getSector()),index=cuts.indexOf(Number(x));
+      if(index<0)return false;
+      if(tool!=='stair')setTool('stair');
+      window.ArenaStudio?.cancelStair();
+      stairIndex=index;selectedSeat=null;selectedRows.clear();
+      renderInspector();openInspector();return true;
+    },
+    refreshInspector(){renderInspector();},
     check:checkDiagram,
     async backupBeforeImport(){
       // The last valid project stays recoverable even when import replaces it.
@@ -177,10 +205,28 @@
   }
   el('uxWorkScale').addEventListener('click',()=>manualScale(1,true));
   el('uxFitAll').addEventListener('click',()=>el('studioFit').click());
+  // Keep the point underneath the mouse stationary when zooming.
   frame.addEventListener('wheel',event=>{
     if(!isEdit())return;
     event.preventDefault();
-    manualScale(zoom.edit*(event.deltaY<0?1.12:.89));
+    if(event.shiftKey&&!event.ctrlKey&&!event.metaKey){
+      frame.scrollLeft+=(Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:event.deltaY);
+      return;
+    }
+    const previous=zoom.edit;
+    const amount=event.deltaMode===1?event.deltaY*15:event.deltaMode===2?event.deltaY*160:event.deltaY;
+    const next=Math.max(.35,Math.min(2.5,previous*(amount<0?1.12:1/1.12)));
+    if(next===previous)return;
+    const area=frame.getBoundingClientRect();
+    const px=Math.max(0,event.clientX-area.left);
+    const py=Math.max(0,event.clientY-area.top);
+    const leftBefore=frame.scrollLeft,topBefore=frame.scrollTop;
+    // The canvas has 18px of fixed padding around the SVG.
+    const pad=18;
+    manualScale(next);
+    const factor=next/previous;
+    frame.scrollLeft=Math.max(0,(leftBefore+px-pad)*factor+pad-px);
+    frame.scrollTop=Math.max(0,(topBefore+py-pad)*factor+pad-py);
   },{passive:false});
   // Drag empty canvas by middle mouse/Space, or use the Hand tool on touch.
   frame.addEventListener('pointerdown',event=>{
