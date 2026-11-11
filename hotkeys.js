@@ -15,7 +15,7 @@
   };
   const dialogs=()=>[...document.querySelectorAll('dialog[open]')];
   const topDialog=()=>dialogs().at(-1)||null;
-  let clip=null,keysOpen=false;
+  let clip=null,keysOpen=false,multiAnchor=null;
   const HELP=[
     {group:'Общие',items:[
       ['? или Ctrl+/', 'Показать список горячих клавиш'],
@@ -42,6 +42,7 @@
     ]},
     {group:'Выбор и перемещение',items:[
       ['Стрелки','Выбрать соседнее место или ряд'],
+      ['Shift+←/→ в «Выбор»','Выделить соседние кресла для объединения'],
       ['Стрелки в режиме «Двигать»','Сдвинуть кресло или ряд на 16 единиц'],
       ['Shift+стрелки в «Двигать»','Сдвинуть на 64 единицы'],
       ['Shift+стрелки в «Ряды»','Сдвинуть выделенные ряды'],
@@ -202,12 +203,37 @@
     if(numberField){numberField.focus();numberField.select?.();return true;}
     return false;
   }
+  function extendSeatSelection(step){
+    const row=getRow();
+    if(!row?.seats.length)return false;
+    const ordered=rowStairLayout(row,getSector()).ordered;
+    const currentId=multiAnchor||selectedSeat||[...multiSelectedSeatIds].at(-1);
+    let index=ordered.findIndex(s=>s.id===currentId);
+    if(index<0)index=step>0?0:ordered.length-1;
+    const next=ordered[index+step];
+    if(!next)return true;
+    if(!multiSelectEnabled){
+      multiSelectEnabled=true;
+      multiSelectedSeatIds.clear();
+      if(ordered[index])multiSelectedSeatIds.add(ordered[index].id);
+    }
+    multiSelectedSeatIds.add(next.id);
+    multiAnchor=next.id;
+    selectedRow=row.id;selectedSeat=null;
+    renderEditor();
+    return true;
+  }
   function navigateSeat(step){
     let row=getRow(),rows=getSector().rows;
     if(!row&&rows.length){row=rows[0];selectedRow=row.id;}
     if(!row?.seats.length)return false;
     const ordered=rowStairLayout(row,getSector()).ordered;
-    let index=ordered.findIndex(s=>s.id===selectedSeat);
+    let index=ordered.findIndex(s=>s.id===selectedSeat||s.id===multiAnchor);
+    if(multiSelectEnabled){
+      multiSelectEnabled=false;
+      multiSelectedSeatIds.clear();
+      multiAnchor=null;
+    }
     if(index<0)index=step>0?-1:ordered.length;
     const next=ordered[Math.max(0,Math.min(ordered.length-1,index+step))];
     if(!next)return false;
@@ -279,7 +305,10 @@
       if(!row||row.locked){toast('Ряд заблокирован');return true;}
       seat.x+=dir[0]*scale;seat.y+=dir[1]*scale;changed();return true;
     }
-    if(dir[0])return navigateSeat(dir[0]);
+    if(dir[0]){
+      if(e.shiftKey)return extendSeatSelection(dir[0]);
+      return navigateSeat(dir[0]);
+    }
     return navigateRow(-dir[1],!!getSeat());
   }
   function toggleLock(){
@@ -302,6 +331,11 @@
   function copySelection(){
     if(!activeEditor())return false;
     const row=getRow(),seat=getSeat(),tool=ux()?.getTool();
+    if(multiSelectEnabled&&row&&multiSelectedSeatIds.size){
+      const seats=rowStairLayout(row,getSector()).ordered.filter(s=>multiSelectedSeatIds.has(s.id));
+      clip={kind:'seats',seats:seats.map(s=>structuredClone(s))};
+      toast('Скопировано мест: '+seats.length);return true;
+    }
     if(seat&&tool!=='row'){
       clip={kind:'seat',seats:[structuredClone(seat)]};
       toast('Кресло скопировано');return true;
@@ -314,6 +348,28 @@
   }
   function pasteSelection(){
     if(!activeEditor()||!clip)return false;
+    if(clip.kind==='seats'){
+      const row=getRow();
+      if(!row||row.locked||row.seats.length+clip.seats.length>500){
+        toast('Недостаточно места или ряд заблокирован');return true;
+      }
+      const sorted=[...clip.seats].sort((a,b)=>a.x-b.x);
+      const minX=Math.min(...sorted.map(s=>s.x)),minY=Math.min(...sorted.map(s=>s.y));
+      const right=Math.max(0,...row.seats.map(s=>s.x+seatWidth(s)));
+      const numeric=row.seats.map(s=>Number(s.number)).filter(Number.isInteger);
+      let max=numeric.length?Math.max(...numeric):row.seats.length;
+      const added=[];
+      for(const source of sorted){
+        const item=structuredClone(source);
+        item.id=uid();item.number=String(++max);
+        item.x=right+6+(source.x-minX);
+        item.y=(row.seats.at(-1)?.y??0)+(source.y-minY);
+        added.push(item);
+      }
+      row.seats.push(...added);
+      multiSelectEnabled=false;multiSelectedSeatIds.clear();multiAnchor=null;
+      selectedSeat=added[0]?.id||null;changed();return true;
+    }
     if(clip.kind==='seat'){
       const row=getRow();if(!row||row.locked||row.seats.length>=500){
         toast('Выбери незаблокированный ряд с доступными местами');return true;
