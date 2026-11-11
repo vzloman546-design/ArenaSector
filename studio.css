@@ -280,3 +280,21 @@ body.studio-active #editView{
 #viewView .section-title>div{display:none}
 #viewView .tip{display:none}
 .report-subtitle{display:none}
+
+/* Place fixed-X stairways directly in the diagram, without opening a tall editor. */
+.studio-stair-place-hint{
+  position:sticky;left:50%;top:10px;z-index:7;width:max-content;max-width:calc(100% - 20px);
+  transform:translateX(-50%);margin:0 auto;padding:7px 9px 7px 13px;
+  display:flex;align-items:center;justify-content:center;gap:13px;
+  border:1px solid #9ebfdc;border-radius:9px;background:#f0f7ff;
+  box-shadow:0 5px 15px #182e4922;color:#185f95;font-size:12px;font-weight:700;
+}
+.studio-stair-place-hint[hidden]{display:none!important}
+.studio-stair-place-hint button{
+  border:0;background:transparent;color:#567998;font-size:16px;cursor:pointer;
+  min-height:25px;min-width:25px;border-radius:6px;
+}
+.studio-stair-place-hint button:hover{background:#dbeeff}
+#editView.studio-placing-stair .studio-stage,
+#editView.studio-placing-stair .studio-stage .seat{cursor:crosshair!important}
+#studioPlaceStairLine{width:100%;min-height:40px}
