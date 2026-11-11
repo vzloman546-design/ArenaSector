@@ -259,7 +259,10 @@
       return true;
     }
     if(tool==='stair'){
-      if(!dir[0])return false;
+      if(!dir[0]){
+        if(frame())frame().scrollTop+=dir[1]*80;
+        return true; // Never let the legacy handler move a row in staircase mode.
+      }
       const ok=ux()?.nudgeSelectedStair?.(dir[0]*(e.shiftKey?16:4));
       if(!ok)toast('Сначала выбери лестницу на схеме');
       return true;
@@ -267,7 +270,8 @@
     if(tool==='row'){
       if(e.shiftKey)return moveRows(dir[0]*64,dir[1]*64,true);
       if(dir[1])return navigateRow(-dir[1]);
-      return false;
+      if(frame())frame().scrollLeft+=dir[0]*80;
+      return true; // Row-selection mode must never move row coordinates accidentally.
     }
     if(tool==='move'){
       const row=getRow(),seat=getSeat(),scale=e.shiftKey?64:16;
