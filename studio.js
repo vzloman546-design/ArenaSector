@@ -228,8 +228,28 @@
     if(!getSeat())return;
     syncSeatDialog();seatDialog.showModal();syncSeatDialog();
   });
+  function syncStairButtons(){
+    const side=getSector().stairSide||'none';
+    $s('studioStairLeft').setAttribute('aria-pressed',String(side==='left'||side==='both'));
+    $s('studioStairRight').setAttribute('aria-pressed',String(side==='right'||side==='both'));
+  }
+  function toggleStair(side){
+    const current=getSector().stairSide||'none';
+    const left=current==='left'||current==='both';
+    const right=current==='right'||current==='both';
+    const nextLeft=side==='left'?!left:left;
+    const nextRight=side==='right'?!right:right;
+    const value=nextLeft&&nextRight?'both':nextLeft?'left':nextRight?'right':'none';
+    const select=$s('stairSide');
+    select.value=value;
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+    syncStairButtons();
+  }
+  $s('studioStairLeft').addEventListener('click',()=>toggleStair('left'));
+  $s('studioStairRight').addEventListener('click',()=>toggleStair('right'));
   $s('studioOpenSettings').addEventListener('click',()=>{
     $s('stairSide').value=getSector().stairSide||'none';
+    syncStairButtons();
     settingsDialog.showModal();
   });
   for(const close of document.querySelectorAll('[data-studio-close]'))
