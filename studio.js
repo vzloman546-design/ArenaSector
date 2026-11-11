@@ -318,6 +318,8 @@
     if(cuts.some(cut=>Math.abs(cut-x)<12)){toast('Лестница уже есть здесь');return false;}
     if(cuts.length>=20){toast('Не больше 20 лестниц');return false;}
     sector.stairLines=[...cuts,x].sort((a,b)=>a-b);
+    // Preserve the viewport while the new gap appears; the Fit button remains available.
+    autoFit=false;
     changed();
     return true;
   }
@@ -326,6 +328,7 @@
     const next=verticalStairCuts(section).filter(cut=>cut!==value);
     if(next.length)section.stairLines=next;
     else delete section.stairLines;
+    autoFit=false;
     changed();
   }
   $s('studioStairLinesList').addEventListener('click',e=>{
@@ -340,6 +343,7 @@
         toast('Слишком близко к другой лестнице');return;
       }
       getSector().stairLines=lines.map(x=>x===oldX?nextX:x).sort((a,b)=>a-b);
+      autoFit=false;
       changed();
       return;
     }
