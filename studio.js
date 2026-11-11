@@ -91,11 +91,21 @@
       '<button type="button" class="studio-row-choice" data-studio-row-action="select" data-row-id="'+esc(row.id)+'">'+
       '<strong>'+esc(row.label)+'</strong><small>'+row.seats.length+' мест</small></button>'+
       '<div class="studio-row-buttons">'+
-        '<button type="button" title="Изменить номер" aria-label="Изменить номер ряда '+esc(row.label)+'" data-studio-row-action="rename" data-row-id="'+esc(row.id)+'">✎</button>'+
-        '<button type="button" title="Выше" aria-label="Переместить ряд выше" data-studio-row-action="up" data-row-id="'+esc(row.id)+'" '+(i===rows.length-1?'disabled':'')+'>↑</button>'+
-        '<button type="button" title="Ниже" aria-label="Переместить ряд ниже" data-studio-row-action="down" data-row-id="'+esc(row.id)+'" '+(i===0?'disabled':'')+'>↓</button>'+
-        '<button type="button" title="Дублировать" aria-label="Дублировать ряд" data-studio-row-action="copy" data-row-id="'+esc(row.id)+'">⧉</button>'+
-        '<button type="button" title="Удалить" aria-label="Удалить ряд" class="danger" data-studio-row-action="delete" data-row-id="'+esc(row.id)+'">✕</button>'+
+        '<select class="studio-row-action-select" aria-label="Действия с рядом '+esc(row.label)+'" data-studio-row-menu="'+esc(row.id)+'">'+
+          '<option value="">⋯</option>'+
+          '<option value="rename">Переименовать</option>'+
+          '<option value="up" '+(i===rows.length-1?'disabled':'')+'>Переместить выше</option>'+
+          '<option value="down" '+(i===0?'disabled':'')+'>Переместить ниже</option>'+
+          '<option value="copy">Дублировать</option>'+
+          '<option value="delete">Удалить</option>'+
+        '</select>'+
+        '<span hidden>'+
+          '<button type="button" data-studio-row-action="rename" data-row-id="'+esc(row.id)+'"></button>'+
+          '<button type="button" data-studio-row-action="up" data-row-id="'+esc(row.id)+'" '+(i===rows.length-1?'disabled':'')+'></button>'+
+          '<button type="button" data-studio-row-action="down" data-row-id="'+esc(row.id)+'" '+(i===0?'disabled':'')+'></button>'+
+          '<button type="button" data-studio-row-action="copy" data-row-id="'+esc(row.id)+'"></button>'+
+          '<button type="button" data-studio-row-action="delete" data-row-id="'+esc(row.id)+'"></button>'+
+        '</span>'+
       '</div></div>').join('');
     const list=$s('studioRowsList');
     if(!rows.length)list.innerHTML='<div class="empty">Рядов пока нет</div>';
@@ -455,6 +465,14 @@
     const name={up:'row-up',down:'row-down',copy:'row-copy',delete:'row-delete'};
     return name[action];
   }
+  $s('studioRowsList').addEventListener('change',e=>{
+    const select=e.target.closest('[data-studio-row-menu]');
+    if(!select||!select.value)return;
+    const action=select.value;select.value='';
+    select.closest('.studio-row-item')
+      ?.querySelector('[data-studio-row-action="'+action+'"]')
+      ?.click();
+  });
   $s('studioRowsList').addEventListener('click',e=>{
     const button=e.target.closest('[data-studio-row-action]');
     if(!button)return;
