@@ -116,6 +116,8 @@
       selectedRows.clear();
       if(next!=='stair')stairIndex=-1;
     }
+    if(next==='row')window.ArenaStudio?.setToolTarget('row');
+    if(next==='select'||next==='move')window.ArenaStudio?.setToolTarget('seat');
     if(next==='stair')window.ArenaStudio?.beginStair();
     else window.ArenaStudio?.cancelStair();
     if(next==='pan')frame.style.touchAction='none';
@@ -464,8 +466,10 @@
   function paintRowSelection(){
     const canvas=el('editCanvas');
     if(!canvas)return;
-    for(const seat of canvas.querySelectorAll('[data-seat][data-row]'))
+    for(const seat of canvas.querySelectorAll('[data-seat][data-row]')){
       seat.classList.toggle('ux-row-selected',tool==='row'&&selectedRows.has(seat.dataset.row));
+      seat.classList.toggle('ux-locked-seat',!!rowById(seat.dataset.row)?.locked);
+    }
   }
   function editRowProp(id,value){
     const row=rowById(id);if(!row||row.locked)return;
