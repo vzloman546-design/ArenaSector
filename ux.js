@@ -23,6 +23,23 @@
     canDragSeat(rowId){return tool==='move'&&!rowById(rowId)?.locked},
     getTool(){return tool},
     check:checkDiagram,
+    async backupBeforeImport(){
+      // The last valid project stays recoverable even when import replaces it.
+      if(!db)return;
+      await writeVersion(true);
+      history.push(serial());
+      if(history.length>limit)history.shift();
+      future=[];
+      updateHistoryButtons();
+    },
+    onImported(){
+      lastSnapshot=serial();
+      selectedRows.clear();
+      selectedRow=getSector().rows[0]?.id||null;
+      selectedSeat=null;
+      updateHistoryButtons();
+      scheduleInspector();
+    },
     undo,redo
   };
 
