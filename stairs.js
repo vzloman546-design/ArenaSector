@@ -7,10 +7,13 @@
   const sides=value=>value==='both'?['left','right']:value==='none'?[]:[value];
 
   function stairMetrics(section,kind){
-    const all=section.rows.flatMap(row=>row.seats);
+    const all=section.rows.flatMap(row=>{
+      const layout=rowStairLayout(row,section);
+      return row.seats.map(seat=>({seat,x:layout.displayX.get(seat.id)}));
+    });
     if(!all.length)return null;
-    const minX=Math.min(0,...all.map(seat=>seat.x))-12;
-    const maxX=Math.max(360,...all.map(seat=>seat.x+seatWidth(seat)));
+    const minX=Math.min(0,...all.map(item=>item.x))-12;
+    const maxX=Math.max(360,...all.map(item=>item.x+seatWidth(item.seat)));
     const shift=-minX+62;
     const rows=section.rows;
     const positions=rows.map((row,i)=>({row,base:49+(rows.length-1-i)*51}));
@@ -18,8 +21,8 @@
     const verticalShift=38-topMost;
     const ys=positions.flatMap(({row,base})=>row.seats.map(seat=>base+seat.y+verticalShift));
     const y1=Math.min(...ys)-16,y2=Math.max(...ys)+15;
-    const leftSeat=Math.min(...all.map(seat=>seat.x));
-    const rightSeat=Math.max(...all.map(seat=>seat.x+seatWidth(seat)));
+    const leftSeat=Math.min(...all.map(item=>item.x));
+    const rightSeat=Math.max(...all.map(item=>item.x+seatWidth(item.seat)));
     return {
       left:shift+leftSeat-27,
       right:shift+rightSeat+12,
@@ -71,11 +74,14 @@
   drawExportCanvas=function(id,section){
     const canvas=oldExport(id,section);
     if(!canvas||stairsFor(section)==='none')return canvas;
-    const rows=section.rows,all=rows.flatMap(row=>row.seats);
+    const rows=section.rows,all=rows.flatMap(row=>{
+      const layout=rowStairLayout(row,section);
+      return row.seats.map(seat=>({seat,x:layout.displayX.get(seat.id)}));
+    });
     if(!all.length)return canvas;
-    const minX=Math.min(0,...all.map(seat=>seat.x));
-    const maxRight=Math.max(...all.map(seat=>seat.x+seatWidth(seat)));
-    const minLeft=Math.min(...all.map(seat=>seat.x));
+    const minX=Math.min(0,...all.map(item=>item.x));
+    const maxRight=Math.max(...all.map(item=>item.x+seatWidth(item.seat)));
+    const minLeft=Math.min(...all.map(item=>item.x));
     const baseY=index=>108+(rows.length-1-index)*58;
     const lowY=Math.min(...rows.flatMap((row,i)=>row.seats.map(seat=>baseY(i)+seat.y-17)));
     const verticalShift=90-lowY;
