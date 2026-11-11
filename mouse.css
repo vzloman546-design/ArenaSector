@@ -12,7 +12,7 @@
 .mouse-menu-item{
   display:flex;align-items:center;width:100%;min-height:34px;padding:8px 10px;
   border:0;background:transparent;text-align:left;color:#304860;
-  font:600 12px/1.3 inherit;border-radius:7px;cursor:pointer;white-space:normal;
+  font:inherit;font-size:12px;font-weight:600;line-height:1.3;border-radius:7px;cursor:pointer;white-space:normal;
 }
 .mouse-menu-item:hover:not(:disabled),.mouse-menu-item:focus-visible{background:#eaf4fd;color:#175f9b;outline:none}
 .mouse-menu-item.danger{color:#ad4052}
