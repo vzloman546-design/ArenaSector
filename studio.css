@@ -283,7 +283,7 @@ body.studio-active #editView{
 
 /* Place fixed-X stairways directly in the diagram, without opening a tall editor. */
 .studio-stair-place-hint{
-  position:sticky;left:50%;top:10px;z-index:7;width:max-content;max-width:calc(100% - 20px);
+  position:absolute;left:50%;top:10px;z-index:7;width:max-content;max-width:calc(100% - 20px);
   transform:translateX(-50%);margin:0 auto;padding:7px 9px 7px 13px;
   display:flex;align-items:center;justify-content:center;gap:13px;
   border:1px solid #9ebfdc;border-radius:9px;background:#f0f7ff;
