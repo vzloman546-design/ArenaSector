@@ -173,3 +173,12 @@
   .hotkeys-dialog .studio-modal-footer{padding:8px 12px}
   .hotkeys-footer-hint{font-size:10px}
 }
+
+/* The two zoom presets are mutually exclusive; manual zoom clears their emphasis. */
+.ux-stage-actions .btn[aria-pressed="true"]{
+  background:#e6f1fb;
+  border-color:#a4c9e9;
+  color:#155c96;
+  font-weight:750;
+}
+.ux-stage-actions .btn[aria-pressed="false"]{font-weight:550}
