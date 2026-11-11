@@ -399,17 +399,69 @@ function rowLabelOffset(row){
   const mid=Math.floor(offsets.length/2);
   return offsets.length%2?offsets[mid]:(offsets[mid-1]+offsets[mid])/2;
 }
-function seatSvg(kind){const s=getSector();if(!s.rows.length)return `<div class="empty" style="width:320px;max-width:100%">Нет рядов для отображения</div>`;
-const all=s.rows.flatMap(r=>r.seats);const minX=Math.min(0,...all.map(x=>x.x))-12,maxX=Math.max(360,...all.map(x=>x.x+seatWidth(x)));const marginLeft=62,shift=-minX+marginLeft, w=Math.max(450,maxX-minX+100);const editable=kind==='edit';
-// Keep vertically shifted seats and their row labels within the SVG viewBox.
-const verticalPositions=s.rows.map((r,ri)=>{const base=49+(s.rows.length-1-ri)*51;return {base,row:r}});
-const topMost=Math.min(...verticalPositions.flatMap(({base,row})=>[base+rowLabelOffset(row)-12,...row.seats.map(seat=>base+seat.y-16)]));
-const bottomMost=Math.max(...verticalPositions.flatMap(({base,row})=>[base+rowLabelOffset(row)+14,...row.seats.map(seat=>base+seat.y+16)]));
-// Normalize the preview around the actual rows, including when they were all shifted down.
+// Internal stairways split all rows after the same left-to-right seating position.
+// Positions are visual, not stored chair numbers; source coordinates stay unchanged.
+function rowStairLayout(row,section){
+  const ordered=[...row.seats].sort((a,b)=>a.x-b.x||row.seats.indexOf(a)-row.seats.indexOf(b));
+  const marks=Array.isArray(section.innerStairs)
+    ?section.innerStairs.filter(p=>Number.isInteger(p)&&p>0&&p<ordered.length).sort((a,b)=>a-b)
+    :[];
+  const displayX=new Map();
+  let shift=0,markIndex=0;
+  for(let i=0;i<ordered.length;i++){
+    if(markIndex<marks.length&&marks[markIndex]===i){shift+=42;markIndex++;}
+    displayX.set(ordered[i].id,ordered[i].x+shift);
+  }
+  const stairs=marks.map(after=>{
+    const left=ordered[after-1],right=ordered[after];
+    const rightOfLeft=displayX.get(left.id)+seatWidth(left);
+    const leftOfRight=displayX.get(right.id);
+    return {after,x:(rightOfLeft+leftOfRight-22)/2,width:22};
+  });
+  return {ordered,displayX,stairs};
+}
+function drawStairwaySVG(x,y,w,h,after){
+  let treads='';
+  for(let k=8;k<h-3;k+=11)
+    treads+=`<line x1="${x+3}" y1="${y+k}" x2="${x+w-3}" y2="${y+k}" stroke="#94a7b8" stroke-width="1"/>`;
+  return `<g class="inner-stairway" role="img" aria-label="Лестничный проход после позиции ${after}" pointer-events="none"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#eef3f8" stroke="#b9c7d5" stroke-width=".85" rx="2"/>${treads}</g>`;
+}
+function canvasStairway(ctx,x,y,w,h){
+  ctx.save();
+  ctx.fillStyle='#eef3f8';ctx.strokeStyle='#b9c7d5';ctx.lineWidth=.85;
+  ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);
+  ctx.strokeStyle='#94a7b8';ctx.lineWidth=1;
+  for(let k=8;k<h-3;k+=11){ctx.beginPath();ctx.moveTo(x+3,y+k);ctx.lineTo(x+w-3,y+k);ctx.stroke();}
+  ctx.restore();
+}
+function seatSvg(kind){
+const s=getSector();
+if(!s.rows.length)return `<div class="empty" style="width:320px;max-width:100%">Нет рядов для отображения</div>`;
+const layouts=s.rows.map(row=>rowStairLayout(row,s));
+const coords=s.rows.flatMap((row,i)=>row.seats.map(seat=>({x:layouts[i].displayX.get(seat.id),seat})));
+const minX=Math.min(0,...coords.map(c=>c.x))-12;
+const maxX=Math.max(360,...coords.map(c=>c.x+seatWidth(c.seat)));
+const shift=-minX+62,w=Math.max(450,maxX-minX+100),editable=kind==='edit';
+const verticalPositions=s.rows.map((row,i)=>({row,base:49+(s.rows.length-1-i)*51}));
+const topMost=Math.min(...verticalPositions.flatMap(({row,base})=>[base+rowLabelOffset(row)-12,...row.seats.map(seat=>base+seat.y-16)]));
+const bottomMost=Math.max(...verticalPositions.flatMap(({row,base})=>[base+rowLabelOffset(row)+14,...row.seats.map(seat=>base+seat.y+16)]));
 const verticalShift=38-topMost;
 const h=Math.max(170,Math.ceil(bottomMost+verticalShift+50));
 let out=`<svg xmlns="http://www.w3.org/2000/svg" class="seat-svg ${editable?(multiSelectEnabled?'seat-edit multi-mode':'seat-edit'):''}" viewBox="0 0 ${w} ${h}" width="${w*zoom[kind]}" height="${h*zoom[kind]}" data-base-width="${w}" data-base-height="${h}" role="img" aria-label="Схема сектора ${safeText(chosen)}"><text class="seat-title" x="${w/2}" y="17" text-anchor="middle">ДАЛЬНИЕ РЯДЫ</text>`;
-s.rows.forEach((r,ri)=>{const y=49+(s.rows.length-1-ri)*51;out+=`<text class="seat-row-label" x="9" y="${y+7+rowLabelOffset(r)+verticalShift}">Р ${safeText(r.label)}</text>`;r.seats.forEach(seat=>{out+=`<g class="seat ${editable&&(multiSelectEnabled?multiSelectedSeatIds.has(seat.id):seat.id===selectedSeat)?'selected':''}" data-seat="${seat.id}" data-row="${r.id}" aria-label="Ряд ${safeText(r.label)}, место ${safeText(seat.number)}"><rect class="seat-body" x="${shift+seat.x}" y="${y+seat.y-15+verticalShift}" width="${seatWidth(seat)}" height="28" rx="7"/><text class="seat-text" x="${shift+seat.x+seatWidth(seat)/2}" y="${y+seat.y+verticalShift}">${safeText(seat.number)}</text></g>`})});out+=`<text class="seat-title" x="${w/2}" y="${h-13}" text-anchor="middle">НАПРАВЛЕНИЕ К ПОЛЮ ↓</text></svg>`;return out}
+s.rows.forEach((row,i)=>{
+  const base=49+(s.rows.length-1-i)*51,layout=layouts[i];
+  out+=`<text class="seat-row-label" x="9" y="${base+7+rowLabelOffset(row)+verticalShift}">Р ${safeText(row.label)}</text>`;
+  for(const stair of layout.stairs){
+    out+=drawStairwaySVG(shift+stair.x,base-25+rowLabelOffset(row)+verticalShift,stair.width,50,stair.after);
+  }
+  row.seats.forEach(seat=>{
+    const sx=shift+layout.displayX.get(seat.id),sy=base+seat.y+verticalShift;
+    out+=`<g class="seat ${editable&&(multiSelectEnabled?multiSelectedSeatIds.has(seat.id):seat.id===selectedSeat)?'selected':''}" data-seat="${seat.id}" data-row="${row.id}" aria-label="Ряд ${safeText(row.label)}, место ${safeText(seat.number)}"><rect class="seat-body" x="${sx}" y="${sy-15}" width="${seatWidth(seat)}" height="28" rx="7"/><text class="seat-text" x="${sx+seatWidth(seat)/2}" y="${sy}">${safeText(seat.number)}</text></g>`;
+  });
+});
+out+=`<text class="seat-title" x="${w/2}" y="${h-13}" text-anchor="middle">НАПРАВЛЕНИЕ К ПОЛЮ ↓</text></svg>`;
+return out;
+}
 function renderPreview(kind){const el=$(kind+'Canvas');if(!el)return;el.innerHTML=seatSvg(kind);$(kind+'ZoomLabel').textContent=Math.round(zoom[kind]*100)+'%';if(kind==='edit')wireSeatDrag(el)}
 // Infer direction from physical X positions, not storage order.
 function rowNumberDirection(row){
@@ -451,19 +503,18 @@ const active=svg.querySelector(`[data-seat="${drag.s.id}"]`);if(active){const bo
 });const finish=event=>{if(!drag||event.pointerId!==drag.pointer)return;const moved=drag.moved;drag=null;if(moved)changed();else {renderRowSelectionOnly();renderSeatEditor()}};svg.addEventListener('pointerup',finish);svg.addEventListener('pointercancel',finish)}
 function renderRowSelectionOnly(){$$('#rowList .row-card').forEach(x=>x.classList.toggle('selected',x.querySelector('[data-row-select]')?.dataset.rowSelect===selectedRow));$$('#editCanvas .seat').forEach(x=>x.classList.toggle('selected',multiSelectEnabled?multiSelectedSeatIds.has(x.dataset.seat):x.dataset.seat===selectedSeat));updateMultiSelectControls();['shiftRowLeft','shiftRowRight','shiftRowUp','shiftRowDown'].forEach(id=>$(id).disabled=!getRow())}
 function zoomTo(kind,step){zoom[kind]=Math.min(2.5,Math.max(.6,Math.round((zoom[kind]+step)*10)/10));renderPreview(kind)}
-function validateImport(p){if(!p||p.schemaVersion!==1||p.kind!=='ArenaSectorProject'||typeof p.sectors!=='object'||!p.sectors)throw Error('Неизвестный формат проекта');const ids=Object.values(STANDS).flatMap(s=>s.sectors);for(const id of ids){const s=p.sectors[id];if(!s||typeof s!=='object'||!Array.isArray(s.rows))throw Error('Отсутствуют данные сектора '+id);if(s.rows.length>300)throw Error('Слишком много рядов');const rowIds=new Set();for(const r of s.rows){if(!Array.isArray(r.seats)||r.seats.length>500||!r.id||rowIds.has(r.id)||typeof r.label!=='string'||r.label.length>20)throw Error('Ошибка ряда в секторе '+id);rowIds.add(r.id);const nums=new Set();for(const seat of r.seats){if(!seat.id||typeof seat.number!=='string'||!seat.number||seat.number.length>16||nums.has(seat.number)||!Number.isFinite(seat.x)||!Number.isFinite(seat.y)||Math.abs(seat.x)>50000||Math.abs(seat.y)>50000)throw Error('Ошибка места в секторе '+id);if(seat.width!==undefined&&(!Number.isFinite(seat.width)||seat.width<26||seat.width>20000))throw Error('Ошибка ширины объединённого места в секторе '+id);if(seat.span!==undefined&&(!Number.isInteger(seat.span)||seat.span<1||seat.span>500))throw Error('Ошибка количества позиций объединённого места в секторе '+id);nums.add(seat.number)}}}return true}
+function validateImport(p){if(!p||p.schemaVersion!==1||p.kind!=='ArenaSectorProject'||typeof p.sectors!=='object'||!p.sectors)throw Error('Неизвестный формат проекта');const ids=Object.values(STANDS).flatMap(s=>s.sectors);for(const id of ids){const s=p.sectors[id];if(!s||typeof s!=='object'||!Array.isArray(s.rows))throw Error('Отсутствуют данные сектора '+id);if(s.rows.length>300)throw Error('Слишком много рядов');if(s.innerStairs!==undefined&&(!Array.isArray(s.innerStairs)||s.innerStairs.length>20||new Set(s.innerStairs).size!==s.innerStairs.length||s.innerStairs.some(n=>!Number.isInteger(n)||n<1||n>499)))throw Error('Неверные внутренние лестницы в секторе '+id);const rowIds=new Set();for(const r of s.rows){if(!Array.isArray(r.seats)||r.seats.length>500||!r.id||rowIds.has(r.id)||typeof r.label!=='string'||r.label.length>20)throw Error('Ошибка ряда в секторе '+id);rowIds.add(r.id);const nums=new Set();for(const seat of r.seats){if(!seat.id||typeof seat.number!=='string'||!seat.number||seat.number.length>16||nums.has(seat.number)||!Number.isFinite(seat.x)||!Number.isFinite(seat.y)||Math.abs(seat.x)>50000||Math.abs(seat.y)>50000)throw Error('Ошибка места в секторе '+id);if(seat.width!==undefined&&(!Number.isFinite(seat.width)||seat.width<26||seat.width>20000))throw Error('Ошибка ширины объединённого места в секторе '+id);if(seat.span!==undefined&&(!Number.isInteger(seat.span)||seat.span<1||seat.span>500))throw Error('Ошибка количества позиций объединённого места в секторе '+id);nums.add(seat.number)}}}return true}
 
 // PNG export is independent of current sector/zoom: each populated sector receives one full-size PNG.
-function drawExportCanvas(id, section){
-  const rows=section.rows;
-  const all=rows.flatMap(row=>row.seats);
+function drawExportCanvas(id,section){
+  const rows=section.rows,all=rows.flatMap(row=>row.seats);
   if(!all.length)return null;
-  const minX=Math.min(0,...all.map(seat=>seat.x)),maxX=Math.max(330,...all.map(seat=>seat.x+seatWidth(seat)));
+  const layouts=rows.map(row=>rowStairLayout(row,section));
+  const coords=rows.flatMap((row,i)=>row.seats.map(seat=>({x:layouts[i].displayX.get(seat.id),seat})));
+  const minX=Math.min(0,...coords.map(c=>c.x)),maxX=Math.max(330,...coords.map(c=>c.x+seatWidth(c.seat)));
   const width=Math.ceil(Math.max(480,maxX-minX+204));
   const baseY=index=>108+(rows.length-1-index)*58;
   const lowY=Math.min(...rows.flatMap((row,i)=>row.seats.map(seat=>baseY(i)+seat.y-17)));
-  // The export must trim blank space above moved rows as well as prevent top clipping.
-  // Negative shift is intentional when the uppermost seat was moved downward.
   const shiftY=90-lowY;
   const bottomY=Math.max(...rows.flatMap((row,i)=>row.seats.map(seat=>baseY(i)+seat.y+18)))+shiftY;
   const fieldY=bottomY+50,height=Math.ceil(fieldY+80);
@@ -481,10 +532,12 @@ function drawExportCanvas(id, section){
   ctx.font='bold 13px Arial,sans-serif';ctx.fillStyle='#8491a2';ctx.textAlign='right';ctx.fillText('ВЕРХНИЕ РЯДЫ',width-26,71);
   ctx.font='bold 14px Arial,sans-serif';ctx.textAlign='left';
   rows.forEach((row,i)=>{
-    const rowY=baseY(i)+shiftY;
+    const rowY=baseY(i)+shiftY,layout=layouts[i];
     ctx.fillStyle='#3b4f68';ctx.fillText(`Р ${row.label}`,22,rowY+rowLabelOffset(row));
+    for(const stair of layout.stairs)
+      canvasStairway(ctx,100+stair.x-minX,rowY-29+rowLabelOffset(row),stair.width,58);
     row.seats.forEach(seat=>{
-      const x=100+seat.x-minX,y=rowY+seat.y,drawWidth=seatWidth(seat)+3;
+      const x=100+layout.displayX.get(seat.id)-minX,y=rowY+seat.y,drawWidth=seatWidth(seat)+3;
       ctx.fillStyle=STANDS[section.stand].color;
       ctx.beginPath();
       if(typeof ctx.roundRect==='function')ctx.roundRect(x,y-17,drawWidth,34,6);
