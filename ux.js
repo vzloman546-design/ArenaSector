@@ -96,6 +96,7 @@
     } else if(next!=='stair')stairIndex=-1;
     if(next==='pan')frame.style.touchAction='none';
     else frame.style.touchAction='';
+    paintRowSelection();
     renderInspector();
   }
   board.querySelectorAll('[data-ux-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.uxTool)));
@@ -164,6 +165,7 @@
     selectedRow=id;selectedSeat=null;
     event.stopImmediatePropagation();
     renderRowSelectionOnly();
+    paintRowSelection();
     renderInspector();
   },true);
   // Click an actual chair to edit its properties, never automatically drag in selection mode.
@@ -369,6 +371,12 @@
   function selectedGroup(){
     return [...selectedRows].map(rowById).filter(Boolean);
   }
+  function paintRowSelection(){
+    const canvas=el('editCanvas');
+    if(!canvas)return;
+    for(const seat of canvas.querySelectorAll('[data-seat][data-row]'))
+      seat.classList.toggle('ux-row-selected',tool==='row'&&selectedRows.has(seat.dataset.row));
+  }
   function editRowProp(id,value){
     const row=rowById(id);if(!row||row.locked)return;
     const next=value.trim();
@@ -498,8 +506,8 @@
     const action=button.dataset.uxAction,sector=getSector(),row=getRow(),seat=getSeat();
     if(action==='new-row')return el('studioAddRow').click();
     if(action==='batch')return el('uxBatchOpen').click();
-    if(action==='row-select-all'){selectedRows=new Set(sector.rows.map(r=>r.id));return renderInspector()}
-    if(action==='row-clear'){selectedRows.clear();return renderInspector()}
+    if(action==='row-select-all'){selectedRows=new Set(sector.rows.map(r=>r.id));paintRowSelection();return renderInspector()}
+    if(action==='row-clear'){selectedRows.clear();paintRowSelection();return renderInspector()}
     if(action.startsWith('rows-')){
       const a=action.slice(5);
       if(dxy[a])return shiftRows(...dxy[a]);
@@ -532,7 +540,7 @@
     if(action==='row-reverse'){if(!row?.locked){renumberRow(row);changed()}return}
     if(action==='row-align'){if(!row?.locked){let x=0;for(const s of [...row.seats].sort((a,b)=>a.x-b.x)){s.x=x;s.y=0;x+=seatWidth(s)+6}changed()}return}
     if(action==='row-copy'){selectedRows=new Set([selectedRow]);return duplicateRows()}
-    if(action==='row-delete'){selectedRows=new Set([selectedRow]);return el('uxInspectorBody').querySelector('[data-ux-action="rows-delete"]')?.click()||deleteSelectedRow()}
+    if(action==='row-delete')return deleteSelectedRow()
     if(action==='stair-add')return el('studioPlaceStairLine').click();
     if(action.startsWith('side-'))return el(action==='side-left'?'studioStairLeft':'studioStairRight').click();
     if(action.startsWith('stair-')){
@@ -570,7 +578,10 @@
   const oldRenderPreview=renderPreview;
   renderPreview=function(kind){
     const answer=oldRenderPreview(kind);
-    if(kind==='edit'&&issues.length)highlightIssues(issues);
+    if(kind==='edit'){
+      if(issues.length)highlightIssues(issues);
+      paintRowSelection();
+    }
     return answer;
   };
   window.addEventListener('arenasector:ready',()=>{
