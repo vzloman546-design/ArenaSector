@@ -13,6 +13,7 @@
   let autoFit=true;
   let raf=0;
   let initialFit=true;
+  let readableScale=true;
   let placingStair=false;
 
   const esc=safeText;
@@ -112,7 +113,7 @@
     const availableHeight=Math.max(70,frame.clientHeight-30);
     const maxScale=window.innerWidth<=650?1.15:1.55;
     const scaled=Math.min(availableWidth/width,availableHeight/height,maxScale);
-    zoom.edit=Math.max(.22,scaled);
+    zoom.edit=Math.max(readableScale?.62:.22,scaled);
     svg.setAttribute('width',String(Math.round(width*zoom.edit)));
     svg.setAttribute('height',String(Math.round(height*zoom.edit)));
     $s('editZoomLabel').textContent=Math.round(zoom.edit*100)+'%';
@@ -158,7 +159,7 @@
     const result=previousSetMode(next);
     document.body.classList.toggle('studio-active',next==='edit');
     if(next==='edit'){
-      initialFit=true;
+      readableScale=true;autoFit=true;initialFit=true;
       syncSelection();
       scheduleFit(true);
     }else{
@@ -174,7 +175,7 @@
   syncSelection();
 
   $s('studioSector').addEventListener('change',e=>{
-    cancelStairPlacement();hideMenu();closeDialogs();target='row';autoFit=true;initialFit=true;
+    cancelStairPlacement();hideMenu();closeDialogs();target='row';autoFit=true;readableScale=true;initialFit=true;
     choose(e.target.value,'edit');
   });
   $s('studioRow').addEventListener('change',e=>{
@@ -251,6 +252,7 @@
       shiftSelectedRow(delta[0],delta[1]);
     }else{
       const seat=getSeat();if(!seat)return;
+      if(getRow()?.locked){toast('Ряд заблокирован');return;}
       seat.x+=delta[0];seat.y+=delta[1];changed();
     }
   }
@@ -267,7 +269,7 @@
   for(const id of ['zoomEditIn','zoomEditOut'])
     $s(id).addEventListener('click',()=>{autoFit=false},true);
   $s('studioFit').addEventListener('click',()=>{
-    autoFit=true;initialFit=true;scheduleFit(true);
+    autoFit=true;readableScale=false;initialFit=true;scheduleFit(true);
   });
   window.addEventListener('resize',()=>{if(mode==='edit')scheduleFit()});
 
@@ -540,6 +542,25 @@
     const originalId={png:'exportPngBtn',json:'exportBtn',import:'importBtn'}[action];
     if(originalId)$s(originalId).click();
   });
+  window.ArenaStudio={
+    setToolTarget(next){if(next==='row'||next==='seat'){target=next;syncSelection();}},
+    getTarget(){return target;},
+    getToolState(){return {placingStair,autoFit,readableScale};},
+    zoomTo(scale){
+      autoFit=false;zoom.edit=Math.max(.35,Math.min(2.5,scale));
+      renderPreview('edit');
+    },
+    fitAll(){autoFit=true;readableScale=false;initialFit=true;scheduleFit(true);},
+    workScale(){autoFit=true;readableScale=true;initialFit=true;scheduleFit(true);},
+    beginStair(){beginStairPlacement();},
+    cancelStair(){cancelStairPlacement();},
+    placeStair(x){return addVerticalStairX(x);},
+    deleteStair(x){removeVerticalStairX(x);},
+    sync(){syncSelection();},
+    showRows(){showRows(false);},
+    showSeat(){if(getSeat()){syncSeatDialog();seatDialog.showModal();syncSeatDialog();}},
+    showSettings(){$s('studioOpenSettings').click();}
+  };
   document.addEventListener('pointerdown',e=>{
     if(!e.target.closest('.studio-project-menu'))hideMenu();
   });
