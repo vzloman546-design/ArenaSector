@@ -113,20 +113,55 @@
     // Do not reset a row label input while it is being edited.
   }
 
+  function scaleButtons(modeName){
+    const large=$s('uxWorkScale'),all=$s('uxFitAll');
+    if(large)large.setAttribute('aria-pressed',String(modeName==='work'));
+    if(all)all.setAttribute('aria-pressed',String(modeName==='all'));
+  }
+  function fullSectorScale(){
+    const svg=canvas.querySelector('svg[data-base-width]');
+    if(!svg)return null;
+    const width=Number(svg.dataset.baseWidth),height=Number(svg.dataset.baseHeight);
+    if(!(width>0&&height>0))return null;
+    // The visible stage includes padding around the SVG; account for it.
+    const availableWidth=Math.max(20,frame.clientWidth-44);
+    const availableHeight=Math.max(20,frame.clientHeight-44);
+    return Math.min(availableWidth/width,availableHeight/height,1.5);
+  }
+  function centerWorkingView(){
+    const svg=canvas.querySelector('svg[data-base-width]');
+    if(!svg)return;
+    const row=getRow(),seat=getSeat();
+    const node=seat
+      ?[...svg.querySelectorAll('[data-seat]')].find(el=>el.dataset.seat===seat.id)
+      :row?.seats.length
+        ?[...svg.querySelectorAll('[data-seat]')].find(el=>el.dataset.seat===row.seats[Math.floor(row.seats.length/2)].id)
+        :null;
+    const outer=frame.getBoundingClientRect?.();
+    const inner=node?.getBoundingClientRect?.();
+    if(outer&&inner&&inner.width&&inner.height){
+      frame.scrollLeft=Math.max(0,frame.scrollLeft+(inner.left+inner.right-outer.left-outer.right)/2);
+      frame.scrollTop=Math.max(0,frame.scrollTop+(inner.top+inner.bottom-outer.top-outer.bottom)/2);
+    }else{
+      frame.scrollLeft=Math.max(0,(frame.scrollWidth-frame.clientWidth)/2);
+      frame.scrollTop=Math.max(0,(frame.scrollHeight-frame.clientHeight)/2);
+    }
+  }
   function fitCanvas(resetScroll=false){
     if(mode!=='edit'||!autoFit)return;
     const svg=canvas.querySelector('svg[data-base-width]');
-    if(!svg)return;
-    const width=Number(svg.dataset.baseWidth),height=Number(svg.dataset.baseHeight);
-    if(!(width>0&&height>0))return;
-    const availableWidth=Math.max(70,frame.clientWidth-30);
-    const availableHeight=Math.max(70,frame.clientHeight-30);
-    const maxScale=window.innerWidth<=650?1.15:1.55;
-    const scaled=Math.min(availableWidth/width,availableHeight/height,maxScale);
-    zoom.edit=Math.max(readableScale?.62:.22,scaled);
-    svg.setAttribute('width',String(Math.round(width*zoom.edit)));
-    svg.setAttribute('height',String(Math.round(height*zoom.edit)));
-    $s('editZoomLabel').textContent=Math.round(zoom.edit*100)+'%';
+    const full=fullSectorScale();
+    if(!svg||full===null)return;
+    // Full view always contains the entire sector, even for very large plans.
+    // Working view is deliberately larger, so chair numbers stay clickable.
+    const next=readableScale
+      ?Math.min(2.5,Math.max(1,full*1.35))
+      :Math.max(.02,full);
+    zoom.edit=next;
+    svg.setAttribute('width',String(Math.round(Number(svg.dataset.baseWidth)*next)));
+    svg.setAttribute('height',String(Math.round(Number(svg.dataset.baseHeight)*next)));
+    $s('editZoomLabel').textContent=Math.round(next*100)+'%';
+    scaleButtons(readableScale?'work':'all');
     if(resetScroll){
       frame.scrollTop=0;
       frame.scrollLeft=0;
@@ -277,10 +312,8 @@
     }
   });
   for(const id of ['zoomEditIn','zoomEditOut'])
-    $s(id).addEventListener('click',()=>{autoFit=false},true);
-  $s('studioFit').addEventListener('click',()=>{
-    autoFit=true;readableScale=false;initialFit=true;scheduleFit(true);
-  });
+    $s(id).addEventListener('click',()=>{autoFit=false;scaleButtons(null)},true);
+  $s('studioFit').addEventListener('click',()=>window.ArenaStudio.fitAll());
   window.addEventListener('resize',()=>{if(mode==='edit')scheduleFit()});
 
   $s('studioAddSeat').addEventListener('click',()=>{
@@ -565,11 +598,20 @@
     getTarget(){return target;},
     getToolState(){return {placingStair,autoFit,readableScale};},
     zoomTo(scale){
-      autoFit=false;zoom.edit=Math.max(.35,Math.min(2.5,scale));
+      autoFit=false;
+      zoom.edit=Math.max(.02,Math.min(2.5,Number(scale)||1));
+      scaleButtons(null);
       renderPreview('edit');
     },
-    fitAll(){autoFit=true;readableScale=false;initialFit=true;scheduleFit(true);},
-    workScale(){autoFit=true;readableScale=true;initialFit=true;scheduleFit(true);},
+    fitAll(){
+      autoFit=true;readableScale=false;initialFit=true;
+      scaleButtons('all');scheduleFit(true);
+    },
+    workScale(){
+      autoFit=true;readableScale=true;initialFit=false;
+      scaleButtons('work');scheduleFit(false);
+      requestAnimationFrame(centerWorkingView);
+    },
     beginStair(){beginStairPlacement();},
     cancelStair(){cancelStairPlacement();},
     placeStair(x){return addVerticalStairX(x);},
