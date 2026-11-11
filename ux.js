@@ -231,7 +231,7 @@
   // Drag empty canvas by middle mouse/Space, or use the Hand tool on touch.
   frame.addEventListener('pointerdown',event=>{
     if(!isEdit())return;
-    const dragging=tool==='pan'||space||event.button===1;
+    const dragging=(event.button===0&&(tool==='pan'||space))||event.button===1;
     if(!dragging)return;
     if(event.target.closest('button,input,select'))return;
     event.preventDefault();event.stopPropagation();
@@ -250,7 +250,7 @@
 
   // Select a whole row without dragging seats. Ctrl/Cmd-click adds another.
   frame.addEventListener('pointerdown',event=>{
-    if(!isEdit()||tool!=='row')return;
+    if(!isEdit()||tool!=='row'||event.button!==0)return;
     const hit=event.target.closest('[data-row]');
     if(!hit)return;
     event.preventDefault();
@@ -277,7 +277,7 @@
 
   // Direct adjustment of fixed-X stairways. Stored positions are not seat numbers.
   frame.addEventListener('pointerdown',event=>{
-    if(!isEdit()||tool!=='stair')return;
+    if(!isEdit()||tool!=='stair'||event.button!==0)return;
     const marker=event.target.closest('.vertical-stairway');
     if(!marker)return;
     window.ArenaStudio?.cancelStair();
