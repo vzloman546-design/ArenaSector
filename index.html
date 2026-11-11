@@ -164,7 +164,8 @@
           <button type="button" class="btn small" id="uxUndo" title="Отменить · Ctrl+Z" disabled>↶</button>
           <button type="button" class="btn small" id="uxRedo" title="Повторить · Ctrl+Y" disabled>↷</button>
           <button type="button" class="btn small" id="uxVersions" title="Версии проекта">◷</button>
-          <button type="button" class="btn small" id="uxCheck" title="Проверить схему"><span class="ux-check-icon">✓</span> Проверка</button>
+          <button type="button" class="btn small" id="uxCheck" title="Проверить схему · C"><span class="ux-check-icon">✓</span> Проверка</button>
+          <button type="button" class="btn small" id="hotkeysHelpButton" title="Горячие клавиши · ?" aria-haspopup="dialog" aria-controls="hotkeysDialog">⌨</button>
         </div>
         <button type="button" class="btn small" id="studioOpenRows">Ряды</button>
         <button type="button" class="btn small" id="studioOpenSeat">Место</button>
@@ -243,6 +244,15 @@
     <div id="seatEditor" hidden></div>
   </div>
 </section>
+<dialog id="hotkeysDialog" class="studio-dialog hotkeys-dialog" aria-labelledby="hotkeysDialogTitle">
+  <div class="studio-modal-head">
+    <div><h2 id="hotkeysDialogTitle">Горячие клавиши</h2><span>Комбинации работают в редакторе. В полях ввода — обычный ввод текста.</span></div>
+    <button type="button" class="studio-close" id="hotkeysDialogClose" aria-label="Закрыть">✕</button>
+  </div>
+  <div class="hotkeys-search-row"><input class="field" id="hotkeysSearch" type="search" placeholder="Найти команду или сочетание…" aria-label="Поиск сочетаний" autocomplete="off"></div>
+  <div class="ux-modal-body hotkeys-list" id="hotkeysList"></div>
+  <div class="studio-modal-footer"><span class="hotkeys-footer-hint">Работает с русской и английской раскладкой</span><button type="button" class="btn" id="hotkeysDialogDone">Готово</button></div>
+</dialog>
 <dialog id="uxVersionsDialog" class="studio-dialog">
   <div class="studio-modal-head"><div><h2>Версии проекта</h2><span>Локальные копии на этом устройстве</span></div><button class="studio-close" type="button" data-ux-close="uxVersionsDialog" aria-label="Закрыть">✕</button></div>
   <div class="ux-modal-body" id="uxVersionsList"></div>
@@ -848,6 +858,7 @@ start().then(()=>window.dispatchEvent(new Event('arenasector:ready')));
 <script src="./stairs.js"></script>
 <script src="./studio.js"></script>
 <script src="./ux.js"></script>
+<script src="./hotkeys.js"></script>
 <script src="./reports.js"></script>
 </body>
 </html>
