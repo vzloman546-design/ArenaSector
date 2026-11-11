@@ -302,3 +302,16 @@ body.studio-active #editView{
 #editView.studio-placing-stair .studio-stage,
 #editView.studio-placing-stair .studio-stage .seat{cursor:crosshair!important}
 #studioPlaceStairLine{width:100%;min-height:40px}
+
+/* Small, reliable row actions menu rather than five crowded icon buttons. */
+.studio-row-action-select{
+  appearance:none;-webkit-appearance:none;width:40px;min-width:40px;
+  height:36px;border:1px solid #dbe5ee;border-radius:9px;
+  background:#f8fafc;color:#506780;font-size:20px;font-weight:750;
+  text-align:center;text-align-last:center;cursor:pointer;padding:0 4px;
+}
+.studio-row-action-select:focus-visible{outline:2px solid #5092c3;outline-offset:2px}
+.studio-row-action-select:hover{background:#eaf3fb;border-color:#acc9df}
+.studio-row-item .studio-row-buttons{display:flex;align-items:center}
+.studio-row-item .studio-row-buttons span[hidden]{display:none!important}
+@media(max-width:710px){.studio-row-action-select{height:38px;width:40px;min-width:40px}}
