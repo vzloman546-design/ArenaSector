@@ -10,6 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="stylesheet" href="./reports.css">
   <link rel="stylesheet" href="./studio.css">
+  <link rel="stylesheet" href="./ux.css">
   <style>
 /* Map lodge bands and compact lodge selection dialog */
 .stadium.original .map-lodge { cursor: pointer; }
@@ -159,6 +160,12 @@
         <span id="studioSectorStats" class="studio-summary"></span>
       </div>
       <div class="studio-head-actions">
+        <div class="ux-history" role="group" aria-label="История действий">
+          <button type="button" class="btn small" id="uxUndo" title="Отменить · Ctrl+Z" disabled>↶</button>
+          <button type="button" class="btn small" id="uxRedo" title="Повторить · Ctrl+Y" disabled>↷</button>
+          <button type="button" class="btn small" id="uxVersions" title="Версии проекта">◷</button>
+          <button type="button" class="btn small" id="uxCheck" title="Проверить схему"><span class="ux-check-icon">✓</span> Проверка</button>
+        </div>
         <button type="button" class="btn small" id="studioOpenRows">Ряды</button>
         <button type="button" class="btn small" id="studioOpenSeat">Место</button>
         <button type="button" class="btn small" id="studioOpenSettings" aria-label="Настройки сектора">⚙ <span>Сектор</span></button>
@@ -188,7 +195,24 @@
         <button type="button" class="btn small" id="studioFit">Вместить</button>
       </div>
     </div>
-    <div class="preview-frame studio-stage"><div id="editCanvas" class="preview-inner"></div><div id="studioStairPlaceHint" class="studio-stair-place-hint" hidden><span>Нажми между креслами</span><button type="button" id="studioCancelStairPlace" aria-label="Отменить установку лестницы">✕</button></div></div>
+    <div class="ux-board">
+      <nav id="uxTools" class="ux-tools" aria-label="Инструменты редактора">
+        <button type="button" data-ux-tool="select" aria-pressed="true" title="Выбрать кресло">↖ <span>Выбор</span></button>
+        <button type="button" data-ux-tool="move" aria-pressed="false" title="Передвинуть кресло мышкой">✥ <span>Двигать</span></button>
+        <button type="button" data-ux-tool="pan" aria-pressed="false" title="Перемещать схему">✋ <span>Схема</span></button>
+        <button type="button" data-ux-tool="row" aria-pressed="false" title="Выбрать ряды">☰ <span>Ряды</span></button>
+        <button type="button" data-ux-tool="stair" aria-pressed="false" title="Добавить или переместить лестницу">▥ <span>Лестница</span></button>
+      </nav>
+      <div class="preview-frame studio-stage">
+        <div id="editCanvas" class="preview-inner"></div>
+        <div id="studioStairPlaceHint" class="studio-stair-place-hint" hidden><span>Нажми между креслами</span><button type="button" id="studioCancelStairPlace" aria-label="Отменить установку лестницы">✕</button></div>
+        <div class="ux-stage-actions"><button id="uxWorkScale" type="button" class="btn small" title="Удобный масштаб">Рабочий</button><button id="uxFitAll" type="button" class="btn small" title="Показать весь сектор">Весь сектор</button></div>
+      </div>
+      <aside id="uxInspector" class="ux-inspector" aria-label="Свойства выделенного объекта">
+        <div class="ux-inspector-head"><strong id="uxInspectorTitle">Свойства</strong><button type="button" id="uxInspectorClose" aria-label="Скрыть свойства">✕</button></div>
+        <div id="uxInspectorBody" class="ux-inspector-body"></div>
+      </aside>
+    </div>
     <div class="studio-dock">
       <div class="studio-selection">
         <div class="studio-target" role="group" aria-label="Перемещать">
@@ -219,9 +243,30 @@
     <div id="seatEditor" hidden></div>
   </div>
 </section>
+<dialog id="uxVersionsDialog" class="studio-dialog">
+  <div class="studio-modal-head"><div><h2>Версии проекта</h2><span>Локальные копии на этом устройстве</span></div><button class="studio-close" type="button" data-ux-close="uxVersionsDialog" aria-label="Закрыть">✕</button></div>
+  <div class="ux-modal-body" id="uxVersionsList"></div>
+  <div class="studio-modal-footer"><button class="btn primary" id="uxSaveVersion" type="button">＋ Сохранить текущую версию</button></div>
+</dialog>
+<dialog id="uxCheckDialog" class="studio-dialog">
+  <div class="studio-modal-head"><div><h2>Проверка схемы</h2><span id="uxCheckSummary"></span></div><button class="studio-close" type="button" data-ux-close="uxCheckDialog" aria-label="Закрыть">✕</button></div>
+  <div class="ux-modal-body" id="uxCheckResults"></div>
+  <div class="studio-modal-footer"><button class="btn" id="uxCheckDismiss" type="button">Закрыть</button><button class="btn primary" id="uxExportAnyway" type="button">Экспортировать PNG</button></div>
+</dialog>
+<dialog id="uxBatchDialog" class="studio-dialog studio-dialog-compact">
+  <div class="studio-modal-head"><div><h2>Создать несколько рядов</h2><span>Настройки новых рядов</span></div><button class="studio-close" type="button" data-ux-close="uxBatchDialog" aria-label="Закрыть">✕</button></div>
+  <form id="uxBatchForm" class="ux-batch-form">
+    <label>Первый ряд<input id="uxBatchStart" class="field" type="number" min="1" max="999" required></label>
+    <label>Количество рядов<input id="uxBatchRows" class="field" type="number" min="1" max="50" value="10" required></label>
+    <label>Мест в каждом<input id="uxBatchSeats" class="field" type="number" min="1" max="250" value="20" required></label>
+    <label>Направление нумерации<select class="field" id="uxBatchDirection"><option value="ltr">Слева направо</option><option value="rtl">Справа налево</option></select></label>
+    <div class="ux-form-actions"><button class="btn primary" type="submit">Создать ряды</button></div>
+  </form>
+</dialog>
 <dialog id="studioRowsDialog" class="studio-dialog">
   <div class="studio-modal-head"><div><h2>Ряды</h2><span id="studioRowsCount"></span></div><button type="button" class="studio-close" data-studio-close="studioRowsDialog" aria-label="Закрыть">✕</button></div>
   <div id="studioRowsList" class="studio-modal-scroll"></div>
+  <button type="button" class="btn small ux-multirow-open" id="uxBatchOpen">＋ Создать сразу несколько рядов</button>
   <form id="studioRowForm" class="studio-modal-footer">
     <label>Номер<input id="studioNewRowLabel" class="field" maxlength="20" required></label>
     <label>Мест<input id="studioNewRowCount" class="field" type="number" min="1" max="250" value="20" required></label>
@@ -674,7 +719,7 @@ for(const kind of ['edit','view','full']){$('zoom'+kind[0].toUpperCase()+kind.sl
 $('fullscreenBtn').onclick=()=>{renderSummary();renderPreview('full');$('viewDialog').showModal()};$('closeDialog').onclick=()=>$('viewDialog').close();$('viewDialog').onclick=e=>{if(e.target===$('viewDialog'))$('viewDialog').close()};$('exportPngBtn').onclick=exportAllPng; $('exportBtn').onclick=doExport;$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=e=>doImport(e.target.files[0]);document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();doExport()}})}
 function shiftSelectedRow(dx,dy=0){const r=getRow();if(!r)return;r.seats.forEach(s=>{s.x+=dx;s.y+=dy});changed()}
 async function start(){try{db=await openDB();const saved=await dbGet();if(saved){validateImport(saved);project=saved}$('saveState').textContent='● Сохранено на устройстве'}catch(e){$('saveState').textContent='⚠ Хранилище недоступно';toast('Не удалось открыть локальное хранилище. Используй экспорт — изменения могут не сохраниться: '+e.message)}events();renderSummary();renderSectorList();renderMap();renderEditor();setMode('map');if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js').catch(()=>{})}}
-start();
+start().then(()=>window.dispatchEvent(new Event('arenasector:ready')));
 </script>
 <script>
 /* ArenaSector: lodge groups on the stadium map. All seat data stays in its original sector. */
@@ -798,6 +843,7 @@ start();
 </script>
 <script src="./stairs.js"></script>
 <script src="./studio.js"></script>
+<script src="./ux.js"></script>
 <script src="./reports.js"></script>
 </body>
 </html>
