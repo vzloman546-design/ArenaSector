@@ -1,0 +1,98 @@
+/* ArenaSector workstation: one canvas, contextual controls and unobtrusive tools. */
+.ux-history{display:inline-flex;align-items:center;gap:3px;border-right:1px solid #e1e7ef;padding-right:8px;margin-right:3px}
+.ux-history .btn{font-size:15px;min-width:33px;min-height:34px;padding:5px 7px}
+.ux-history #uxCheck{font-size:11px;padding:5px 9px;white-space:nowrap}
+.ux-check-icon{font-size:13px}
+.ux-history .btn:disabled{opacity:.37;cursor:default}
+.ux-board{display:flex;flex:1 1 0;min-height:0;min-width:0;position:relative;border-top:1px solid #e5ecf3}
+.ux-tools{display:flex;flex-direction:column;gap:5px;flex:0 0 72px;width:72px;padding:10px 6px;background:#fff;border-right:1px solid #e4ebf3}
+.ux-tools button{display:flex;align-items:center;flex-direction:column;gap:2px;padding:9px 3px 7px;border:1px solid transparent;background:transparent;color:#5e748b;border-radius:10px;cursor:pointer;font-size:23px;line-height:1;touch-action:manipulation}
+.ux-tools button span{font-size:10px;font-weight:650;line-height:1.2}
+.ux-tools button[aria-pressed="true"]{color:#17619a;background:#e8f3ff;border-color:#bad7ee}
+.ux-tools button:hover{background:#eef5fc}
+#editView .ux-board .preview-frame.studio-stage{min-width:0;min-height:0;flex:1 1 0;height:auto!important;position:relative;overscroll-behavior:contain}
+#editView .ux-board .preview-inner{padding:18px;min-height:100%;justify-content:flex-start}
+.ux-board.tool-pan .preview-frame, .ux-board.tool-pan .preview-frame *{cursor:grab!important}
+.ux-board.tool-pan.is-panning .preview-frame, .ux-board.tool-pan.is-panning .preview-frame *{cursor:grabbing!important}
+.ux-board.tool-select .seat{cursor:pointer!important}
+.ux-board.tool-row .seat{cursor:cell!important}
+.ux-board.tool-move .seat{cursor:grab!important}
+.ux-stage-actions{position:sticky;bottom:9px;left:10px;z-index:5;display:flex;gap:5px;width:max-content;margin-top:-35px;pointer-events:none}
+.ux-stage-actions .btn{pointer-events:auto;min-height:31px;font-size:11px;background:#ffffffeb;backdrop-filter:blur(3px);box-shadow:0 2px 6px #192e4820}
+.ux-inspector{flex:0 0 240px;width:240px;background:#fff;border-left:1px solid #e0e9f2;display:flex;flex-direction:column;min-width:0;overflow:auto;max-height:100%}
+.ux-inspector-head{display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;padding:13px 13px 11px;border-bottom:1px solid #edf1f6}
+.ux-inspector-head strong{font-size:13px;font-weight:750;color:#253d54}
+.ux-inspector-head button{border:0;background:transparent;cursor:pointer;padding:5px;color:#7b8a9d;border-radius:6px}
+.ux-inspector-head button:hover{background:#f1f5f9}
+.ux-inspector-body{display:flex;flex-direction:column;gap:12px;padding:12px 13px;overflow-y:auto;min-height:0}
+.ux-properties{display:flex;flex-direction:column;gap:9px}
+.ux-property{display:flex;flex-direction:column;gap:5px}
+.ux-property label,.ux-property>.ux-label{font-size:11px;color:#63768a;font-weight:650}
+.ux-property .field{min-height:35px;padding:5px 8px;font-size:13px;width:100%}
+.ux-properties .ux-divider{border-top:1px solid #e7ecf3;margin:3px 0}
+.ux-prop-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ux-prop-row .btn{flex:1 1 auto;min-height:36px;font-size:12px;white-space:nowrap}
+.ux-prop-row .btn.ux-danger{color:#ad3447;border-color:#f1d1d7}
+.ux-lock-label{display:flex;align-items:center;gap:8px;font-size:12px;color:#435a6c;cursor:pointer}
+.ux-lock-label input{accent-color:#256fae;width:16px;height:16px}
+.ux-mini-info{font-size:11px;color:#718398;line-height:1.4}
+.ux-selected-group{padding:7px 9px;background:#edf6ff;border-radius:9px;color:#255779;font-size:12px}
+.ux-inline-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.ux-inline-actions button{font-size:17px;min-height:33px;padding:2px}
+.ux-placeholder{color:#75869a;font-size:12px;line-height:1.55;padding:6px 0}
+.ux-inspector.is-hidden{display:none}
+.ux-modal-body{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:7px;padding:14px 18px 18px}
+.ux-version-item,.ux-issue{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid #e3ebf3;border-radius:9px;background:#fcfdff;color:#32465a}
+.ux-version-item>div,.ux-issue>div{flex:1;min-width:0}
+.ux-version-item strong,.ux-issue strong{display:block;font-size:12px}
+.ux-version-item small,.ux-issue small{font-size:11px;color:#718398}
+.ux-version-item .btn,.ux-issue .btn{font-size:11px;min-height:32px}
+.ux-issue.ux-error{border-left:3px solid #cc5a55}
+.ux-issue.ux-warning{border-left:3px solid #d3aa53}
+.ux-modal-empty{font-size:13px;color:#718398;text-align:center;padding:26px 8px}
+.ux-multirow-open{margin:5px 12px 8px;align-self:flex-start;min-height:32px}
+.ux-batch-form{padding:16px 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ux-batch-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:650;color:#5c7084;min-width:0}
+.ux-batch-form .field{min-height:39px}
+.ux-form-actions{grid-column:1/-1;display:flex;justify-content:end}
+.ux-form-actions .btn{min-height:39px}
+.ux-tool-badge{font-size:10px;color:#728399;white-space:nowrap}
+#uxVersionsDialog .studio-modal-footer{justify-content:flex-end}
+#uxCheckDialog .studio-modal-footer{justify-content:flex-end}
+.ux-inspector .btn:disabled{opacity:.4}
+.ux-row-chip{display:flex;align-items:center;gap:5px;padding:3px 6px;border:1px solid #dce7ef;border-radius:6px;font-size:11px}
+.ux-row-chip button{border:0;background:transparent;cursor:pointer}
+.ux-layout-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ux-layout-grid>*{min-width:0}
+.ux-mobile-inspector-open{display:none}
+@media(max-width:980px){
+ .ux-tools{flex-basis:60px;width:60px;padding:7px 3px}
+ .ux-tools button{font-size:21px;padding:8px 2px}
+ .ux-inspector{flex-basis:215px;width:215px}
+ .ux-history{padding-right:4px;margin-right:0}
+ #uxCheck .ux-check-icon{display:none}
+ .ux-history #uxCheck{padding:5px 6px}
+}
+@media(max-width:710px){
+ .studio-head{flex-wrap:wrap}
+ .studio-head-actions{flex:1 1 auto;justify-content:flex-end}
+ #studioOpenSeat{display:none}
+ .ux-history .btn{font-size:14px;min-width:29px;padding:4px 5px}
+ #uxCheck{font-size:0!important}
+ #uxCheck .ux-check-icon{display:inline!important;font-size:16px}
+ .ux-board{flex-direction:column}
+ .ux-tools{flex:0 0 auto;width:100%;height:46px;flex-direction:row;justify-content:space-around;padding:3px 6px;border-right:0;border-bottom:1px solid #e4ebf3}
+ .ux-tools button{flex:1;flex-direction:row;justify-content:center;gap:4px;padding:5px 2px;font-size:17px;border-radius:7px}
+ .ux-tools button span{font-size:10px}
+ #editView .ux-board .preview-frame.studio-stage{min-height:0;flex:1 1 0}
+ .ux-inspector{display:none;position:absolute;z-index:20;right:8px;bottom:8px;width:min(300px,calc(100% - 16px));max-height:min(55%,370px);flex:none;border:1px solid #d7e4ef;border-radius:13px;box-shadow:0 12px 35px #1a365540}
+ .ux-inspector.is-open:not(.is-hidden){display:flex}
+ .ux-mobile-inspector-open{display:block;position:absolute;right:10px;bottom:12px;z-index:12;min-height:32px;padding:5px 10px;font-size:11px;background:#fff;border:1px solid #d8e3ed;border-radius:8px;box-shadow:0 2px 8px #182e481b}
+ .ux-stage-actions{bottom:9px}
+ .ux-modal-body{padding:9px}
+ .ux-batch-form{padding:12px;gap:9px}
+}
+@media(max-height:570px){
+ .ux-tools{gap:2px}
+ .ux-tools button span{display:none}
+}
