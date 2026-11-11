@@ -104,14 +104,16 @@
     updateHistoryButtons();scheduleInspector();
   }
   function undo(){
-    if(!history.length)return;
+    if(!history.length){toast('Нет действий для отмены');return false;}
     future.push(serial());
     restoreSnapshot(history.pop());
+    return true;
   }
   function redo(){
-    if(!future.length)return;
+    if(!future.length){toast('Нет отменённых действий');return false;}
     history.push(serial());
     restoreSnapshot(future.pop());
+    return true;
   }
   el('uxUndo').addEventListener('click',undo);
   el('uxRedo').addEventListener('click',redo);
@@ -690,10 +692,12 @@
   const previousDoImport=doImport;
   doImport=async function(file){
     const before=serial();
-    if(file&&db)await writeVersion(true).catch(()=>{});
     const result=await previousDoImport(file);
     if(before!==serial()){
-      history=[];future=[];lastSnapshot=serial();updateHistoryButtons();
+      // Import is also one undoable action; the original importer saves its own backup.
+      if(history.at(-1)!==before)history.push(before);
+      if(history.length>limit)history.shift();
+      future=[];lastSnapshot=serial();updateHistoryButtons();
       selectedRows.clear();stairIndex=-1;issues=[];
     }
     return result;
