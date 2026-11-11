@@ -108,3 +108,7 @@
 .ux-board.tool-pan .preview-frame.studio-stage .seat{pointer-events:none}
 .ux-board.tool-stair .vertical-stairway:hover rect{fill:#d5eaf7;stroke:#3b85b9}
 @media(max-width:710px){.ux-inspector.is-open{max-height:min(62%,430px)}}
+
+/* One entry per task: edit selected seats in the inspector and fit using the canvas control. */
+#editView #studioOpenSeat{display:none}
+#editView #studioFit{display:none}
