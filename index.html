@@ -417,7 +417,7 @@ function rowLabelOffset(row){
 // Positions are visual, not stored chair numbers; source coordinates stay unchanged.
 // Fixed-X stairways stay aligned when different rows have different seat counts.
 const VERTICAL_STAIR_GAP=28;
-const VERTICAL_STAIR_WIDTH=16;
+const VERTICAL_STAIR_WIDTH=14;
 const VERTICAL_STAIR_INSET=(VERTICAL_STAIR_GAP-VERTICAL_STAIR_WIDTH)/2;
 function verticalStairCuts(section){
   return Array.isArray(section.stairLines)
@@ -445,31 +445,32 @@ function rowStairLayout(row,section){
     const left=ordered[after-1],right=ordered[after];
     const rightOfLeft=displayX.get(left.id)+seatWidth(left);
     const leftOfRight=displayX.get(right.id);
-    return {after,x:(rightOfLeft+leftOfRight-22)/2,width:22};
+    return {after,x:(rightOfLeft+leftOfRight-14)/2,width:14};
   });
   return {ordered,baseX,displayX,stairs};
 }
-function fixedStairSVG(x,y,w,h){
-  let treads='';
+// Same understated rail style as the stairways on the sector edges.
+function stairTreadsSVG(x,y,w,h){
+  let lines='';
   for(let k=10;k<h-4;k+=14)
-    treads+='<line x1="'+(x+3)+'" y1="'+(y+k)+'" x2="'+(x+w-3)+'" y2="'+(y+k)+'" stroke="#8da0b2" stroke-width="1"/>';
-  return '<g class="vertical-stairway" role="img" aria-label="Вертикальный лестничный проход" pointer-events="none"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="#edf3f9" stroke="#b5c3d2" stroke-width="1"/>'+treads+'</g>';
+    lines+='<line x1="'+(x+2)+'" y1="'+(y+k)+'" x2="'+(x+w-2)+'" y2="'+(y+k)+'" stroke="#8c9eae" stroke-width="1"/>';
+  return lines;
 }
-
+function fixedStairSVG(x,y,w,h){
+  return '<g class="vertical-stairway" role="img" aria-label="Вертикальный лестничный проход" pointer-events="none"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="#f1f5f9" stroke="#b7c4d1" stroke-width="0.8"/>'+stairTreadsSVG(x,y,w,h)+'</g>';
+}
 function drawStairwaySVG(x,y,w,h,after){
-  let treads='';
-  for(let k=8;k<h-3;k+=11)
-    treads+=`<line x1="${x+3}" y1="${y+k}" x2="${x+w-3}" y2="${y+k}" stroke="#94a7b8" stroke-width="1"/>`;
-  return `<g class="inner-stairway" role="img" aria-label="Лестничный проход после позиции ${after}" pointer-events="none"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#eef3f8" stroke="#b9c7d5" stroke-width=".85" rx="2"/>${treads}</g>`;
+  return '<g class="inner-stairway" role="img" aria-label="Лестничный проход после позиции '+after+'" pointer-events="none"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="#f1f5f9" stroke="#b7c4d1" stroke-width="0.8"/>'+stairTreadsSVG(x,y,w,h)+'</g>';
 }
 function canvasStairway(ctx,x,y,w,h){
   ctx.save();
-  ctx.fillStyle='#eef3f8';ctx.strokeStyle='#b9c7d5';ctx.lineWidth=.85;
+  ctx.fillStyle='#f1f5f9';ctx.strokeStyle='#b7c4d1';ctx.lineWidth=0.8;
   ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);
-  ctx.strokeStyle='#94a7b8';ctx.lineWidth=1;
-  for(let k=8;k<h-3;k+=11){ctx.beginPath();ctx.moveTo(x+3,y+k);ctx.lineTo(x+w-3,y+k);ctx.stroke();}
+  ctx.strokeStyle='#8c9eae';ctx.lineWidth=1;
+  for(let k=10;k<h-4;k+=14){ctx.beginPath();ctx.moveTo(x+2,y+k);ctx.lineTo(x+w-2,y+k);ctx.stroke();}
   ctx.restore();
 }
+
 function seatSvg(kind){
 const s=getSector();
 if(!s.rows.length)return `<div class="empty" style="width:320px;max-width:100%">Нет рядов для отображения</div>`;
@@ -485,8 +486,9 @@ const verticalShift=38-topMost;
 const h=Math.max(170,Math.ceil(bottomMost+verticalShift+50));
 let out=`<svg xmlns="http://www.w3.org/2000/svg" class="seat-svg ${editable?(multiSelectEnabled?'seat-edit multi-mode':'seat-edit'):''}" viewBox="0 0 ${w} ${h}" width="${w*zoom[kind]}" height="${h*zoom[kind]}" data-base-width="${w}" data-base-height="${h}" data-coord-shift="${shift}" role="img" aria-label="Схема сектора ${safeText(chosen)}"><text class="seat-title" x="${w/2}" y="17" text-anchor="middle">ДАЛЬНИЕ РЯДЫ</text>`;
 const fixedCuts=verticalStairCuts(s);
-const bandY=Math.max(20,Math.round(topMost+verticalShift-6));
-const bandEnd=Math.min(h-28,Math.round(bottomMost+verticalShift+6));
+const stairSeatY=s.rows.flatMap((row,i)=>row.seats.map(seat=>49+(s.rows.length-1-i)*51+seat.y+verticalShift));
+const bandY=Math.max(20,Math.min(...stairSeatY)-16);
+const bandEnd=Math.max(...stairSeatY)+15;
 fixedCuts.forEach((cut,i)=>{out+=fixedStairSVG(shift+cut+i*VERTICAL_STAIR_GAP+VERTICAL_STAIR_INSET,bandY,VERTICAL_STAIR_WIDTH,Math.max(25,bandEnd-bandY));});
 s.rows.forEach((row,i)=>{
   const base=49+(s.rows.length-1-i)*51,layout=layouts[i];
@@ -573,7 +575,7 @@ function drawExportCanvas(id,section){
   ctx.font='bold 14px Arial,sans-serif';ctx.textAlign='left';
   verticalStairCuts(section).forEach((cut,i)=>{
     const x=100+cut+i*VERTICAL_STAIR_GAP+VERTICAL_STAIR_INSET-minX;
-    canvasStairway(ctx,x,Math.max(78,lowY+shiftY-8),VERTICAL_STAIR_WIDTH,Math.max(30,bottomY-lowY-shiftY+16));
+    canvasStairway(ctx,x,lowY+shiftY,VERTICAL_STAIR_WIDTH,Math.max(32,bottomY-lowY-shiftY));
   });
   rows.forEach((row,i)=>{
     const rowY=baseY(i)+shiftY,layout=layouts[i];
