@@ -416,7 +416,9 @@ function rowLabelOffset(row){
 // Internal stairways split all rows after the same left-to-right seating position.
 // Positions are visual, not stored chair numbers; source coordinates stay unchanged.
 // Fixed-X stairways stay aligned when different rows have different seat counts.
-const VERTICAL_STAIR_GAP=36;
+const VERTICAL_STAIR_GAP=28;
+const VERTICAL_STAIR_WIDTH=16;
+const VERTICAL_STAIR_INSET=(VERTICAL_STAIR_GAP-VERTICAL_STAIR_WIDTH)/2;
 function verticalStairCuts(section){
   return Array.isArray(section.stairLines)
     ?section.stairLines.filter(x=>Number.isFinite(x)&&Math.abs(x)<=50000).sort((a,b)=>a-b)
@@ -485,7 +487,7 @@ let out=`<svg xmlns="http://www.w3.org/2000/svg" class="seat-svg ${editable?(mul
 const fixedCuts=verticalStairCuts(s);
 const bandY=Math.max(20,Math.round(topMost+verticalShift-6));
 const bandEnd=Math.min(h-28,Math.round(bottomMost+verticalShift+6));
-fixedCuts.forEach((cut,i)=>{out+=fixedStairSVG(shift+cut+i*VERTICAL_STAIR_GAP-2,bandY,22,Math.max(25,bandEnd-bandY));});
+fixedCuts.forEach((cut,i)=>{out+=fixedStairSVG(shift+cut+i*VERTICAL_STAIR_GAP+VERTICAL_STAIR_INSET,bandY,VERTICAL_STAIR_WIDTH,Math.max(25,bandEnd-bandY));});
 s.rows.forEach((row,i)=>{
   const base=49+(s.rows.length-1-i)*51,layout=layouts[i];
   out+=`<text class="seat-row-label" x="9" y="${base+7+rowLabelOffset(row)+verticalShift}">Р ${safeText(row.label)}</text>`;
@@ -570,8 +572,8 @@ function drawExportCanvas(id,section){
   ctx.font='bold 13px Arial,sans-serif';ctx.fillStyle='#8491a2';ctx.textAlign='right';ctx.fillText('ВЕРХНИЕ РЯДЫ',width-26,71);
   ctx.font='bold 14px Arial,sans-serif';ctx.textAlign='left';
   verticalStairCuts(section).forEach((cut,i)=>{
-    const x=100+cut+i*VERTICAL_STAIR_GAP-2-minX;
-    canvasStairway(ctx,x,Math.max(78,lowY+shiftY-8),22,Math.max(30,bottomY-lowY-shiftY+16));
+    const x=100+cut+i*VERTICAL_STAIR_GAP+VERTICAL_STAIR_INSET-minX;
+    canvasStairway(ctx,x,Math.max(78,lowY+shiftY-8),VERTICAL_STAIR_WIDTH,Math.max(30,bottomY-lowY-shiftY+16));
   });
   rows.forEach((row,i)=>{
     const rowY=baseY(i)+shiftY,layout=layouts[i];
