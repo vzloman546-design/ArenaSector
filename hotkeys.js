@@ -299,7 +299,10 @@
       return true;
     }
     if(tool==='row'){
-      if(e.shiftKey)return moveRows(dir[0]*64,dir[1]*64,true);
+      if(e.shiftKey){
+        if(!moveRows(dir[0]*64,dir[1]*64,true))toast('Сначала выбери ряды');
+        return true; // Never fall through to the legacy movement listener.
+      }
       if(dir[1])return navigateRow(-dir[1]);
       if(frame())frame().scrollLeft+=dir[0]*80;
       return true; // Row-selection mode must never move row coordinates accidentally.
