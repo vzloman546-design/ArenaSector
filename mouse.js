@@ -213,6 +213,7 @@
 
   stage.addEventListener('contextmenu',e=>{
     if(!isEdit())return;
+    if(Date.now()<suppressContextUntil){e.preventDefault();return;}
     if(e.target.closest('button,input,select,textarea,.mouse-context-menu'))return;
     e.preventDefault();e.stopPropagation();
     if(rightDrag?.moved){rightDrag=null;return;}
