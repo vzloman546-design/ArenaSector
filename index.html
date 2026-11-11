@@ -9,7 +9,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="stylesheet" href="./reports.css">
-  <link rel="stylesheet" href="./workmode.css">
+  <link rel="stylesheet" href="./studio.css">
   <style>
 /* Map lodge bands and compact lodge selection dialog */
 .stadium.original .map-lodge { cursor: pointer; }
@@ -151,34 +151,107 @@
       <div class="panel"><div class="workspace-head"><div><h2 id="pageTitle">Схема стадиона</h2><p id="pageSubtitle">Нажмите сектор на карте или выберите его из списка</p></div><nav class="tabs" aria-label="Режим работы"><button class="tab active" data-tab="map">Карта</button><button class="tab" data-tab="edit">Редактор</button><button class="tab" data-tab="view">Просмотр</button><button class="tab" data-tab="reports">Отчёты</button></nav></div></div>
       <section id="mapView" class="view active panel"><div class="panel-pad"><div class="section-title"><h2>Общая схема стадиона</h2><small>Нажми на номер сектора</small></div><div class="map-wrap"><svg id="stadiumMap" class="stadium original" viewBox="0 0 852 768" role="img" aria-label="Схема стадиона с кликабельными секторами"></svg></div><div class="map-help"><div class="legend"><span><i class="dot" style="background:var(--A)"></i>A · запад</span><span><i class="dot" style="background:var(--B)"></i>B · север</span><span><i class="dot" style="background:var(--C)"></i>C · восток</span><span><i class="dot" style="background:var(--D)"></i>D · юг</span></div><span>План стадиона — из предоставленного изображения</span></div></div></section>
       <section id="editView" class="view">
-        <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Расстановка мест</h2><div class="work-header-actions"><small>Выбери ряд или отдельное кресло на схеме</small><button type="button" class="btn small work-toggle" id="workModeToggle" aria-pressed="false">⛶ Удобный режим</button></div></div><div class="preview-toolbar"><div class="box-row"><button type="button" class="btn small" id="multiSeatMode" aria-pressed="false">▣ Выбрать несколько мест</button><button type="button" class="btn primary small" id="mergeSeats" hidden disabled>Объединить (0)</button></div><label class="stair-control" for="stairSide">Лестница<select id="stairSide" class="field" aria-label="С какой стороны сектора лестница"><option value="none">Нет</option><option value="left">Слева</option><option value="right">Справа</option><option value="both">С обеих сторон</option></select></label><div class="zoom-control"><button class="btn small icon" id="zoomEditOut" title="Уменьшить">−</button><output id="editZoomLabel">100%</output><button class="btn small icon" id="zoomEditIn" title="Увеличить">＋</button></div></div><div class="preview-frame"><div id="editCanvas" class="preview-inner"></div></div><div class="bottom-row-shift" aria-label="Сдвиг выбранного ряда"><div class="box-row"><button class="btn small" id="shiftRowLeft" title="Сдвинуть выбранный ряд влево на половину шага между креслами">Ряд ← ½ места</button><button class="btn small" id="shiftRowRight" title="Сдвинуть выбранный ряд вправо на половину шага между креслами">Ряд ½ места →</button><button class="btn small" id="shiftRowUp" title="Сдвинуть выбранный ряд вверх на 16 единиц">Ряд ↑ ½ места</button><button class="btn small" id="shiftRowDown" title="Сдвинуть выбранный ряд вниз на 16 единиц">Ряд ½ места ↓</button></div></div><div id="seatEditor" class="seat-editor" hidden></div><p class="tip">Кресла можно перетаскивать мышью или пальцем. Для точной корректировки нажми на кресло и используй кнопки перемещения. Пробел между креслами добавляется отдельной кнопкой.</p><section id="workDock" class="work-dock" aria-label="Быстрое управление креслами и рядами">
-<div class="work-row-line">
-  <div class="work-row-choice"><label for="workRowSelect">Ряд</label><select id="workRowSelect" class="field" aria-label="Выбранный ряд"></select></div>
-  <div class="work-target" role="group" aria-label="Что двигать">
-    <button type="button" id="workTargetRow" class="btn small" aria-pressed="true">Весь ряд</button>
-    <button type="button" id="workTargetSeat" class="btn small" aria-pressed="false">Кресло</button>
+  <div class="studio-shell panel">
+    <div class="studio-head">
+      <div class="studio-sector-wrap">
+        <label class="studio-eyebrow" for="studioSector">Сектор</label>
+        <select id="studioSector" class="field" aria-label="Выбрать сектор"></select>
+        <span id="studioSectorStats" class="studio-summary"></span>
+      </div>
+      <div class="studio-head-actions">
+        <button type="button" class="btn small" id="studioOpenRows">Ряды</button>
+        <button type="button" class="btn small" id="studioOpenSeat">Место</button>
+        <button type="button" class="btn small" id="studioOpenSettings" aria-label="Настройки сектора">⚙ <span>Сектор</span></button>
+        <div class="studio-project-menu">
+          <button type="button" class="btn small" id="studioProjectBtn" aria-expanded="false" aria-controls="studioProjectPanel">⋯</button>
+          <div id="studioProjectPanel" class="studio-project-panel" hidden>
+            <button type="button" data-studio-project="png">Экспорт PNG</button>
+            <button type="button" data-studio-project="json">Скачать проект</button>
+            <button type="button" data-studio-project="import">Импорт проекта</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="studio-toolbar">
+      <div class="studio-row-wrap">
+        <label for="studioRow">Ряд</label>
+        <select id="studioRow" class="field" aria-label="Выбранный ряд"></select>
+      </div>
+      <div class="studio-toolbar-actions">
+        <button type="button" class="btn small" id="multiSeatMode" aria-pressed="false">Выделить</button>
+        <button type="button" class="btn primary small" id="mergeSeats" hidden disabled>Объединить</button>
+      </div>
+      <div class="studio-zoom">
+        <button type="button" class="btn small icon" id="zoomEditOut" aria-label="Уменьшить">−</button>
+        <output id="editZoomLabel" aria-label="Масштаб">100%</output>
+        <button type="button" class="btn small icon" id="zoomEditIn" aria-label="Увеличить">＋</button>
+        <button type="button" class="btn small" id="studioFit">Вместить</button>
+      </div>
+    </div>
+    <div class="preview-frame studio-stage"><div id="editCanvas" class="preview-inner"></div></div>
+    <div class="studio-dock">
+      <div class="studio-selection">
+        <div class="studio-target" role="group" aria-label="Перемещать">
+          <button type="button" id="studioTargetRow" aria-pressed="true">Ряд</button>
+          <button type="button" id="studioTargetSeat" aria-pressed="false">Место</button>
+        </div>
+        <div id="studioSelected" class="studio-selected">Не выбрано</div>
+      </div>
+      <div class="studio-arrows" role="group" aria-label="Перемещение">
+        <button type="button" class="btn" data-studio-move="left" aria-label="Влево">←</button>
+        <button type="button" class="btn" data-studio-move="right" aria-label="Вправо">→</button>
+        <button type="button" class="btn" data-studio-move="up" aria-label="Вверх">↑</button>
+        <button type="button" class="btn" data-studio-move="down" aria-label="Вниз">↓</button>
+      </div>
+      <div class="studio-quick-actions">
+        <button type="button" class="btn" id="studioAddSeat">＋ Место</button>
+        <button type="button" class="btn primary" id="studioAddRow">＋ Ряд</button>
+      </div>
+    </div>
   </div>
-</div>
-<div class="work-action-line">
-  <div class="work-move-buttons" role="group" aria-label="Перемещение на половину места">
-    <button type="button" class="btn" data-work-move="left" aria-label="Влево на половину места">←</button>
-    <button type="button" class="btn" data-work-move="right" aria-label="Вправо на половину места">→</button>
-    <button type="button" class="btn" data-work-move="up" aria-label="Вверх на половину места">↑</button>
-    <button type="button" class="btn" data-work-move="down" aria-label="Вниз на половину места">↓</button>
+  <div id="studioLegacy" hidden>
+    <div id="rowList"></div>
+    <input id="newRowLabel" class="field" value="1" maxlength="20">
+    <input id="newRowCount" class="field" type="number" value="20" min="1" max="250">
+    <button type="button" id="addRow">Добавить ряд</button>
+    <button type="button" id="shiftRowLeft"></button><button type="button" id="shiftRowRight"></button>
+    <button type="button" id="shiftRowUp"></button><button type="button" id="shiftRowDown"></button>
+    <div id="seatEditor" hidden></div>
   </div>
-  <div class="work-seat-choice">
-    <label for="workSeatNumber">№ места</label><input id="workSeatNumber" class="field" maxlength="16" aria-label="Номер выбранного кресла">
-    <button type="button" class="btn small" id="workAddSeat">＋ Место</button>
-    <button type="button" class="btn small" id="workAddRow">＋ Ряд</button>
-    <button type="button" class="btn small" id="workReverse" title="Сменить направление нумерации">⇄</button>
-    <button type="button" class="btn small" id="workFit" title="Вместить схему по высоте">Вместить</button>
+</section>
+<dialog id="studioRowsDialog" class="studio-dialog">
+  <div class="studio-modal-head"><div><h2>Ряды</h2><span id="studioRowsCount"></span></div><button type="button" class="studio-close" data-studio-close="studioRowsDialog" aria-label="Закрыть">✕</button></div>
+  <div id="studioRowsList" class="studio-modal-scroll"></div>
+  <form id="studioRowForm" class="studio-modal-footer">
+    <label>Номер<input id="studioNewRowLabel" class="field" maxlength="20" required></label>
+    <label>Мест<input id="studioNewRowCount" class="field" type="number" min="1" max="250" value="20" required></label>
+    <button type="submit" class="btn primary">＋ Добавить</button>
+  </form>
+</dialog>
+<dialog id="studioSeatDialog" class="studio-dialog studio-dialog-compact">
+  <div class="studio-modal-head"><div><h2 id="studioSeatHeading">Место</h2><span id="studioSeatSubheading"></span></div><button type="button" class="studio-close" data-studio-close="studioSeatDialog" aria-label="Закрыть">✕</button></div>
+  <div class="studio-modal-content">
+    <label class="studio-input-label" for="studioSeatNumber">Номер места</label>
+    <input class="field" id="studioSeatNumber" maxlength="16" autocomplete="off">
+    <div class="studio-modal-actions">
+      <button type="button" class="btn" id="studioSeatGapAdd">＋ Проход после</button>
+      <button type="button" class="btn" id="studioSeatGapRemove">− Убрать проход</button>
+      <button type="button" class="btn danger" id="studioSeatDelete">Удалить место</button>
+    </div>
   </div>
-</div>
-<div id="workStatus" class="work-status" aria-live="polite"></div>
-</section></div></div>
-      <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Ряды</h2><small>Первый ряд снизу, у поля</small></div><div id="rowList" class="row-list"></div><div class="new-row" style="margin-top:12px"><div class="control"><label for="newRowLabel">Номер ряда</label><input id="newRowLabel" class="field" type="text" maxlength="20" value="1"></div><div class="control"><label for="newRowCount">Мест в ряду</label><input id="newRowCount" class="field" type="number" min="1" max="250" value="20"></div><button class="btn primary" id="addRow">＋ Добавить ряд</button></div></div></div>
-        </section>
-      <section id="viewView" class="view panel"><div class="panel-pad"><div class="section-title"><div><h2 id="viewTitle">Просмотр сектора</h2><small>Первый ряд у поля · схема для Билетона</small></div><button class="btn" id="fullscreenBtn">⛶ На весь экран</button></div><div class="preview-toolbar"><div id="viewStats" class="muted" style="font-size:12px"></div><div class="zoom-control"><button class="btn small icon" id="zoomViewOut">−</button><output id="viewZoomLabel">100%</output><button class="btn small icon" id="zoomViewIn">＋</button></div></div><div class="preview-frame" style="height:min(62vh,610px)"><div id="viewCanvas" class="preview-inner"></div></div><p class="tip">На телефоне можно прокручивать увеличенную схему по горизонтали и вертикали. Для изменения нажми вкладку «Редактор».</p></div></section>
+</dialog>
+<dialog id="studioSettingsDialog" class="studio-dialog studio-dialog-compact">
+  <div class="studio-modal-head"><div><h2>Сектор</h2><span id="studioSettingsSector"></span></div><button type="button" class="studio-close" data-studio-close="studioSettingsDialog" aria-label="Закрыть">✕</button></div>
+  <div class="studio-modal-content">
+    <label class="studio-input-label" for="stairSide">Лестница</label>
+    <select id="stairSide" class="field" aria-label="Сторона лестницы"><option value="none">Нет</option><option value="left">Слева</option><option value="right">Справа</option><option value="both">С обеих сторон</option></select>
+    <div class="studio-modal-actions">
+      <button type="button" class="btn" id="studioRenumber">⇄ Перенумеровать ряд</button>
+      <button type="button" class="btn" id="studioStraighten">Выровнять ряд</button>
+    </div>
+  </div>
+</dialog>
+<section id="viewView" class="view panel"><div class="panel-pad"><div class="section-title"><div><h2 id="viewTitle">Просмотр сектора</h2><small>Первый ряд у поля · схема для Билетона</small></div><button class="btn" id="fullscreenBtn">⛶ На весь экран</button></div><div class="preview-toolbar"><div id="viewStats" class="muted" style="font-size:12px"></div><div class="zoom-control"><button class="btn small icon" id="zoomViewOut">−</button><output id="viewZoomLabel">100%</output><button class="btn small icon" id="zoomViewIn">＋</button></div></div><div class="preview-frame" style="height:min(62vh,610px)"><div id="viewCanvas" class="preview-inner"></div></div><p class="tip">На телефоне можно прокручивать увеличенную схему по горизонтали и вертикали. Для изменения нажми вкладку «Редактор».</p></div></section>
       <section id="reportsView" class="view panel" aria-label="Отчётность по местам">
         <div class="panel-pad">
           <div class="section-title">
@@ -620,8 +693,8 @@ start();
 })();
 
 </script>
-<script src="./workmode.js"></script>
 <script src="./stairs.js"></script>
+<script src="./studio.js"></script>
 <script src="./reports.js"></script>
 </body>
 </html>
