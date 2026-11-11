@@ -9,8 +9,8 @@
 
   let tool='select', selectedRows=new Set(), stairIndex=-1;
   let pan=null, stairDrag=null, space=false, lastSnapshot='', history=[], future=[];
-  let restoring=false, bypassExport=false, inspected=false, selectedIssue=null;
-  const limit=45,versionKey='ArenaSector-versions-v1';
+  let restoring=false, bypassExport=false, inspected=false, selectedIssue=null,editCount=0;
+  const limit=45;
   const esc=safeText;
   const rowById=id=>getSector().rows.find(row=>row.id===id);
   const isEdit=()=>mode==='edit';
@@ -33,6 +33,8 @@
       if(lastSnapshot&&current!==lastSnapshot){
         history.push(lastSnapshot);if(history.length>limit)history.shift();
         future=[];
+        editCount++;
+        if(editCount%25===0)writeVersion(true).catch(()=>{});
       }
       lastSnapshot=current;
     }
@@ -321,38 +323,82 @@
     }
   },true);
 
-  function loadVersions(){
+  // Version history is stored in the existing IndexedDB "projects" store.
+  // Unlike localStorage this supports large seating plans without tiny string quotas.
+  let shownVersions=[];
+  const maxVersions=12;
+  async function loadVersions(){
+    if(!db)return [];
+    return new Promise((resolve,reject)=>{
+      const list=[];
+      const req=db.transaction('projects','readonly').objectStore('projects').openCursor();
+      req.onsuccess=()=>{
+        const cursor=req.result;
+        if(!cursor){resolve(list.sort((a,b)=>b.time-a.time));return;}
+        if(String(cursor.key).startsWith('version:')){
+          const record=cursor.value;
+          if(record&&typeof record.snapshot==='string')
+            list.push({key:cursor.key,...record});
+        }
+        cursor.continue();
+      };
+      req.onerror=()=>reject(req.error);
+    });
+  }
+  async function writeVersion(automatic=false){
+    if(!db){
+      if(!automatic)toast('Хранилище недоступно. Скачай JSON-проект');
+      return;
+    }
+    const now=Date.now(),key='version:'+now+':'+Math.random().toString(36).slice(2,8);
+    const item={time:now,date:new Date(now).toISOString(),sector:chosen,
+      label:automatic?'Автоматическая копия':'Сохранено вручную',snapshot:serial()};
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('projects','readwrite');
+      tx.objectStore('projects').put(item,key);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+    });
+    const all=await loadVersions();
+    if(all.length>maxVersions){
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('projects','readwrite');
+        const store=tx.objectStore('projects');
+        all.slice(maxVersions).forEach(v=>store.delete(v.key));
+        tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+      });
+    }
+    if(!automatic){toast('Версия сохранена');await renderVersions();}
+  }
+  async function renderVersions(){
     try{
-      const arr=JSON.parse(localStorage.getItem(versionKey)||'[]');
-      return Array.isArray(arr)?arr.filter(v=>v&&typeof v.snapshot==='string').slice(0,8):[];
-    }catch{return []}
+      shownVersions=await loadVersions();
+      el('uxVersionsList').innerHTML=shownVersions.length?shownVersions.map((v,i)=>
+        '<div class="ux-version-item"><div><strong>'+esc(new Date(v.date||v.time).toLocaleString('ru-RU'))+
+        '</strong><small>'+esc(v.label||'Копия проекта')+' · сектор '+esc(v.sector)+'</small></div>'+
+        '<button class="btn small" data-ux-restore="'+i+'">Восстановить</button></div>'
+      ).join(''):'<div class="ux-modal-empty">Сохранённых версий пока нет</div>';
+    }catch(err){toast('Не удалось открыть версии: '+err.message);}
   }
-  function writeVersion(){
-    const list=loadVersions();
-    const stamp=new Date().toISOString();
-    list.unshift({date:stamp,sector:chosen,snapshot:serial()});
-    try{localStorage.setItem(versionKey,JSON.stringify(list.slice(0,5)));toast('Версия сохранена')}
-    catch{toast('Не удалось сохранить версию. Скачай JSON-проект')}
+  el('uxVersions').addEventListener('click',()=>{
+    if(!db){toast('Локальное хранилище недоступно');return;}
+    el('uxVersionsDialog').showModal();
     renderVersions();
-  }
-  function renderVersions(){
-    const list=loadVersions();
-    el('uxVersionsList').innerHTML=list.length?list.map((v,i)=>
-      '<div class="ux-version-item"><div><strong>'+esc(new Date(v.date).toLocaleString('ru-RU'))+
-      '</strong><small>Сектор '+esc(v.sector)+'</small></div>'+
-      '<button class="btn small" data-ux-restore="'+i+'">Восстановить</button></div>'
-    ).join(''):'<div class="ux-modal-empty">Сохранённых версий пока нет</div>';
-  }
-  el('uxVersions').addEventListener('click',()=>{renderVersions();el('uxVersionsDialog').showModal()});
-  el('uxSaveVersion').addEventListener('click',writeVersion);
-  el('uxVersionsList').addEventListener('click',e=>{
+  });
+  el('uxSaveVersion').addEventListener('click',()=>writeVersion(false)
+    .catch(err=>toast('Не удалось сохранить версию: '+err.message)));
+  el('uxVersionsList').addEventListener('click',async e=>{
     const b=e.target.closest('[data-ux-restore]');if(!b)return;
-    const v=loadVersions()[Number(b.dataset.uxRestore)];if(!v)return;
-    if(!confirm('Восстановить эту версию? Текущие изменения можно будет отменить.'))return;
-    try{const p=JSON.parse(v.snapshot);validateImport(p)}catch{toast('Версия повреждена');return}
-    history.push(serial());if(history.length>limit)history.shift();
-    future=[];restoreSnapshot(v.snapshot);
-    el('uxVersionsDialog').close();toast('Версия восстановлена');
+    const v=shownVersions[Number(b.dataset.uxRestore)];if(!v)return;
+    if(!confirm('Восстановить эту версию? Текущая схема сохранится в резервной копии.'))return;
+    try{
+      const p=JSON.parse(v.snapshot);
+      validateImport(p);
+      await writeVersion(true);
+      history.push(serial());if(history.length>limit)history.shift();
+      future=[];restoreSnapshot(v.snapshot);
+      el('uxVersionsDialog').close();
+      toast('Версия восстановлена');
+    }catch(err){toast('Не удалось восстановить: '+err.message);}
   });
   document.querySelectorAll('[data-ux-close]').forEach(b=>b.addEventListener('click',()=>el(b.dataset.uxClose).close()));
 
@@ -583,6 +629,18 @@
   setMode=function(next){
     const result=oldSetMode(next);
     if(next==='edit')requestAnimationFrame(()=>{if(isEdit())manualScale(1)});
+    return result;
+  };
+  // Imported project replaces the entire history baseline; preserve a pre-import copy.
+  const previousDoImport=doImport;
+  doImport=async function(file){
+    const before=serial();
+    if(file&&db)await writeVersion(true).catch(()=>{});
+    const result=await previousDoImport(file);
+    if(before!==serial()){
+      history=[];future=[];lastSnapshot=serial();updateHistoryButtons();
+      selectedRows.clear();stairIndex=-1;issues=[];
+    }
     return result;
   };
   const oldChoose=choose;
