@@ -243,8 +243,12 @@
 <dialog id="studioSettingsDialog" class="studio-dialog studio-dialog-compact">
   <div class="studio-modal-head"><div><h2>Сектор</h2><span id="studioSettingsSector"></span></div><button type="button" class="studio-close" data-studio-close="studioSettingsDialog" aria-label="Закрыть">✕</button></div>
   <div class="studio-modal-content">
-    <label class="studio-input-label" for="stairSide">Лестница</label>
-    <select id="stairSide" class="field" aria-label="Сторона лестницы"><option value="none">Нет</option><option value="left">Слева</option><option value="right">Справа</option><option value="both">С обеих сторон</option></select>
+    <div class="studio-input-label" id="studioStairTitle">Лестница</div>
+    <div class="studio-stair-options" role="group" aria-labelledby="studioStairTitle">
+      <button type="button" class="btn studio-stair-button" id="studioStairLeft" aria-pressed="false">Слева</button>
+      <button type="button" class="btn studio-stair-button" id="studioStairRight" aria-pressed="false">Справа</button>
+    </div>
+    <select id="stairSide" class="field" aria-label="Расположение лестницы" hidden><option value="none">Нет</option><option value="left">Слева</option><option value="right">Справа</option><option value="both">С обеих сторон</option></select>
     <div class="studio-modal-actions">
       <button type="button" class="btn" id="studioRenumber">⇄ Перенумеровать ряд</button>
       <button type="button" class="btn" id="studioStraighten">Выровнять ряд</button>
