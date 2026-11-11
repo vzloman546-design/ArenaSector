@@ -274,7 +274,7 @@
   window.addEventListener('resize',()=>{if(mode==='edit')scheduleFit()});
 
   $s('studioAddSeat').addEventListener('click',()=>{
-    const row=getRow();if(!row)return;
+    const row=getRow();if(!row||row.locked){if(row?.locked)toast('Ряд заблокирован');return;}
     selectedSeat=appendSeatToRow(row).id;target='seat';changed();
   });
   function showRows(focusInput=false){
@@ -413,7 +413,7 @@
   });
   $s('studioSeatInnerStair').addEventListener('click',()=>{
     const seat=getSeat(),row=getRow();
-    if(!seat||!row)return;
+    if(!seat||!row||row.locked)return;
     const pos=rowStairLayout(row,getSector()).ordered.indexOf(seat)+1;
     const x=betweenSeatCut(row,pos);
     if(x===null)return;
@@ -496,7 +496,7 @@
   });
   $s('studioSeatNumber').addEventListener('change',e=>{
     const row=getRow(),seat=getSeat(),next=e.target.value.trim();
-    if(!row||!seat)return;
+    if(!row||!seat||row.locked)return;
     if(!next||next.length>16||row.seats.some(other=>other.id!==seat.id&&other.number===next)){
       toast('Этот номер уже используется');e.target.value=seat.number;return;
     }
@@ -505,24 +505,24 @@
   $s('studioSeatGapAdd').addEventListener('click',()=>adjustGap(24));
   $s('studioSeatGapRemove').addEventListener('click',()=>adjustGap(-24));
   function adjustGap(dx){
-    const row=getRow(),seat=getSeat();if(!row||!seat)return;
+    const row=getRow(),seat=getSeat();if(!row||!seat||row.locked)return;
     const ordered=[...row.seats].sort((a,b)=>a.x-b.x);
     const index=ordered.indexOf(seat);
     ordered.slice(index+1).forEach(s=>s.x+=dx);
     changed();
   }
   $s('studioSeatDelete').addEventListener('click',()=>{
-    const row=getRow(),seat=getSeat();if(!row||!seat)return;
+    const row=getRow(),seat=getSeat();if(!row||!seat||row.locked)return;
     if(!confirm('Удалить место '+seat.number+'?'))return;
     row.seats=row.seats.filter(s=>s.id!==seat.id);
     selectedSeat=null;target='row';seatDialog.close();changed();
   });
   $s('studioRenumber').addEventListener('click',()=>{
-    const row=getRow();if(!row)return;
+    const row=getRow();if(!row||row.locked)return;
     renumberRow(row);changed();
   });
   $s('studioStraighten').addEventListener('click',()=>{
-    const row=getRow();if(!row)return;
+    const row=getRow();if(!row||row.locked)return;
     if(!confirm('Выровнять ряд '+row.label+'?'))return;
     let x=0;
     [...row.seats].sort((a,b)=>a.x-b.x).forEach(seat=>{
