@@ -156,7 +156,7 @@
     // Working view is deliberately larger, so chair numbers stay clickable.
     const next=readableScale
       ?Math.min(2.5,Math.max(1,full*1.35))
-      :Math.max(.02,full);
+      :full;
     zoom.edit=next;
     svg.setAttribute('width',String(Math.round(Number(svg.dataset.baseWidth)*next)));
     svg.setAttribute('height',String(Math.round(Number(svg.dataset.baseHeight)*next)));
