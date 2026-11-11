@@ -40,7 +40,25 @@
       updateHistoryButtons();
       scheduleInspector();
     },
-    undo,redo
+    undo,redo,
+    historyState(){return {undo:history.length,redo:future.length,initialized:!!lastSnapshot};},
+    saveVersion(){return writeVersion(false);},
+    getSelectedRowIds(){return [...selectedRows];},
+    setSelectedRows(ids){
+      selectedRows=new Set(ids.filter(id=>rowById(id)));
+      if(selectedRows.size)selectedRow=selectedRows.values().next().value;
+      paintRowSelection();renderInspector();
+    },
+    getSelectedStair(){return stairIndex<0?null:verticalStairCuts(getSector())[stairIndex]??null;},
+    nudgeSelectedStair(delta){
+      const cuts=verticalStairCuts(getSector()),current=cuts[stairIndex];
+      if(current===undefined)return false;
+      const next=current+delta;
+      if(Math.abs(next)>50000||cuts.some((x,i)=>i!==stairIndex&&Math.abs(x-next)<16))return false;
+      getSector().stairLines=cuts.map((v,i)=>i===stairIndex?next:v).sort((a,b)=>a-b);
+      stairIndex=verticalStairCuts(getSector()).indexOf(next);changed();return true;
+    },
+    clearSelection(){selectedSeat=null;selectedRows.clear();stairIndex=-1;renderRowSelectionOnly();renderInspector();}
   };
 
   const originalChanged=changed;
@@ -89,16 +107,12 @@
   }
   el('uxUndo').addEventListener('click',undo);
   el('uxRedo').addEventListener('click',redo);
+  // One central keyboard dispatcher in hotkeys.js handles Undo/Redo.
+  // Keeping two global Ctrl+Z listeners caused inconsistent shortcut handling.
   document.addEventListener('keydown',event=>{
     const tag=document.activeElement?.tagName;
     const typing=['INPUT','TEXTAREA','SELECT'].includes(tag)||document.activeElement?.isContentEditable;
     if(event.key===' '&&!typing&&isEdit())space=true;
-    if(typing)return;
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){
-      event.preventDefault();event.shiftKey?redo():undo();
-    }else if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'){
-      event.preventDefault();redo();
-    }
   },true);
   document.addEventListener('keyup',e=>{if(e.key===' ')space=false});
   window.addEventListener('blur',()=>space=false);
@@ -698,6 +712,7 @@
   };
   window.addEventListener('arenasector:ready',()=>{
     lastSnapshot=serial();
+    history.length=0;future.length=0;
     updateHistoryButtons();
     setTool('select');
     // For large sectors start at a legible scale; the Fit button retains the overview.
