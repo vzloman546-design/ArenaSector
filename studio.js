@@ -13,6 +13,7 @@
   let autoFit=true;
   let raf=0;
   let initialFit=true;
+  let placingStair=false;
 
   const esc=safeText;
   function hideMenu(){
@@ -74,7 +75,9 @@
     const pos=rowStairLayout(row,getSector()).ordered.indexOf(seat)+1;
     const button=$s('studioSeatInnerStair');
     button.disabled=pos<1||pos>=row.seats.length;
-    button.textContent=(getSector().innerStairs||[]).includes(pos)?'− Убрать лестницу после места':'＋ Лестница после места';
+    const cut=betweenSeatCut(row,pos);
+    button.textContent=Number.isFinite(cut)&&verticalStairCuts(getSector()).some(x=>Math.abs(x-cut)<12)
+      ?'− Убрать вертикальную лестницу':'＋ Лестница после места';
   }
   function rowsFormDefaults(){
     $s('studioNewRowLabel').value=nextRowLabel();
@@ -159,6 +162,7 @@
       syncSelection();
       scheduleFit(true);
     }else{
+      cancelStairPlacement();
       hideMenu();
       closeDialogs();
     }
@@ -170,7 +174,7 @@
   syncSelection();
 
   $s('studioSector').addEventListener('change',e=>{
-    hideMenu();closeDialogs();target='row';autoFit=true;initialFit=true;
+    cancelStairPlacement();hideMenu();closeDialogs();target='row';autoFit=true;initialFit=true;
     choose(e.target.value,'edit');
   });
   $s('studioRow').addEventListener('change',e=>{
@@ -181,6 +185,54 @@
   });
   $s('studioTargetRow').addEventListener('click',()=>{target='row';syncSelection();});
   $s('studioTargetSeat').addEventListener('click',()=>{target='seat';syncSelection();});
+
+  function cancelStairPlacement(){
+    placingStair=false;
+    host.classList.remove('studio-placing-stair');
+    $s('studioStairPlaceHint').hidden=true;
+  }
+  function beginStairPlacement(){
+    if(verticalStairCuts(getSector()).length>=20){toast('Не больше 20 лестниц');return;}
+    settingsDialog.close();
+    placingStair=true;
+    host.classList.add('studio-placing-stair');
+    $s('studioStairPlaceHint').hidden=false;
+  }
+  $s('studioCancelStairPlace').addEventListener('click',cancelStairPlacement);
+  $s('studioPlaceStairLine').addEventListener('click',beginStairPlacement);
+  canvas.addEventListener('pointerdown',event=>{
+    if(!placingStair)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const svg=canvas.querySelector('svg[data-coord-shift]');
+    if(!svg||!svg.getScreenCTM())return;
+    const pt=svg.createSVGPoint();
+    pt.x=event.clientX;pt.y=event.clientY;
+    const mapped=pt.matrixTransform(svg.getScreenCTM().inverse());
+    const displayed=mapped.x-Number(svg.dataset.coordShift||0);
+    let raw=displayed;
+    for(const [i,cut] of verticalStairCuts(getSector()).entries()){
+      if(displayed>cut+i*VERTICAL_STAIR_GAP+VERTICAL_STAIR_GAP/2)raw-=VERTICAL_STAIR_GAP;
+    }
+    // Prefer an actual gap when tapping near a chair on a touch screen.
+    const lines=getSector().rows.map(r=>rowStairLayout(r,getSector()));
+    let best=Math.round(raw),score=Infinity;
+    for(let dx=-18;dx<=18;dx++){
+      const x=Math.round(raw)+dx;
+      let overlaps=0;
+      for(const layout of lines)
+        for(const seat of layout.ordered){
+          const left=layout.baseX.get(seat.id);
+          if(x>left+2&&x<left+seatWidth(seat)-2)overlaps++;
+        }
+      const candidate=overlaps*80+Math.abs(dx);
+      if(candidate<score){score=candidate;best=x;}
+    }
+    if(addVerticalStairX(best))cancelStairPlacement();
+  },true);
+  document.addEventListener('keydown',e=>{
+    if(placingStair&&e.key==='Escape'){e.preventDefault();cancelStairPlacement();}
+  },true);
 
   // Seat hit testing still belongs to the original SVG drag handler.
   canvas.addEventListener('pointerdown',e=>{
@@ -193,7 +245,7 @@
   const steps={left:[-16,0],right:[16,0],up:[0,-16],down:[0,16]};
   function move(which){
     const delta=steps[which];
-    if(!delta||mode!=='edit')return;
+    if(!delta||mode!=='edit'||placingStair)return;
     if(target==='row'){
       if(!getRow())return;
       shiftSelectedRow(delta[0],delta[1]);
@@ -252,8 +304,43 @@
   }
   $s('studioStairLeft').addEventListener('click',()=>toggleStair('left'));
   $s('studioStairRight').addEventListener('click',()=>toggleStair('right'));
+  function betweenSeatCut(row,after){
+    if(!row)return null;
+    const layout=rowStairLayout(row,getSector());
+    const ordered=layout.ordered;
+    if(after<1||after>=ordered.length)return null;
+    const left=ordered[after-1],right=ordered[after];
+    return Math.round((layout.baseX.get(left.id)+seatWidth(left)+layout.baseX.get(right.id))/2);
+  }
+  function addVerticalStairX(value){
+    if(!Number.isFinite(value)||Math.abs(value)>50000)return false;
+    const sector=getSector(),x=Math.round(value),cuts=verticalStairCuts(sector);
+    if(cuts.some(cut=>Math.abs(cut-x)<12)){toast('Лестница уже есть здесь');return false;}
+    if(cuts.length>=20){toast('Не больше 20 лестниц');return false;}
+    sector.stairLines=[...cuts,x].sort((a,b)=>a-b);
+    changed();
+    return true;
+  }
+  function removeVerticalStairX(value){
+    const section=getSector();
+    const next=verticalStairCuts(section).filter(cut=>cut!==value);
+    if(next.length)section.stairLines=next;
+    else delete section.stairLines;
+    changed();
+  }
+  $s('studioStairLinesList').addEventListener('click',e=>{
+    const button=e.target.closest('[data-stair-line-remove]');
+    if(!button)return;
+    removeVerticalStairX(Number(button.dataset.stairLineRemove));
+  });
   function renderInnerStairs(){
     const sector=getSector();
+    const cuts=verticalStairCuts(sector);
+    $s('studioPlaceStairLine').disabled=cuts.length>=20;
+    $s('studioStairLinesList').innerHTML=cuts.map((x,i)=>
+      '<div class="studio-inner-stair-item"><span>Лестница '+(i+1)+'</span>'+
+      '<button type="button" data-stair-line-remove="'+x+'" aria-label="Удалить лестницу">✕</button></div>'
+    ).join('');
     const row=getRow()?.seats.length>=2?getRow():sector.rows.find(r=>r.seats.length>=2);
     const ordered=row?rowStairLayout(row,sector).ordered:[];
     const marks=Array.isArray(sector.innerStairs)?sector.innerStairs:[];
@@ -267,7 +354,7 @@
     const preferred=String(picked>0&&picked<ordered.length?picked:previous);
     if([...select.options].some(option=>option.value===preferred))select.value=preferred;
     select.disabled=choices.length===0;
-    $s('studioInnerStairAdd').disabled=select.disabled||marks.length>=20;
+    $s('studioInnerStairAdd').disabled=select.disabled||cuts.length>=20;
     const list=$s('studioInnerStairsList');
     list.innerHTML=marks.length?marks.map(pos=>{
       const label=pos<ordered.length
@@ -294,7 +381,9 @@
     if(settingsDialog.open)renderInnerStairs();
   }
   $s('studioInnerStairAdd').addEventListener('click',()=>{
-    setInnerStair(Number($s('studioInnerStairAfter').value),true);
+    const row=getRow()?.seats.length>=2?getRow():getSector().rows.find(r=>r.seats.length>=2);
+    const x=betweenSeatCut(row,Number($s('studioInnerStairAfter').value));
+    if(x!==null)addVerticalStairX(x);
   });
   $s('studioInnerStairsList').addEventListener('click',event=>{
     const button=event.target.closest('[data-inner-stair-remove]');
@@ -304,8 +393,11 @@
     const seat=getSeat(),row=getRow();
     if(!seat||!row)return;
     const pos=rowStairLayout(row,getSector()).ordered.indexOf(seat)+1;
-    if(pos<1||pos>=row.seats.length)return;
-    setInnerStair(pos,!(getSector().innerStairs||[]).includes(pos));
+    const x=betweenSeatCut(row,pos);
+    if(x===null)return;
+    const same=verticalStairCuts(getSector()).find(cut=>Math.abs(cut-x)<12);
+    if(same!==undefined)removeVerticalStairX(same);
+    else addVerticalStairX(x);
   });
   $s('studioOpenSettings').addEventListener('click',()=>{
     $s('stairSide').value=getSector().stairSide||'none';
