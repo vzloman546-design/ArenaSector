@@ -1,0 +1,69 @@
+/* Focused seating workflow: keep the diagram and movement controls in one viewport. */
+#editView .work-only{display:none}
+#editView.work-mode{
+  display:flex!important;flex-direction:column;position:fixed;inset:0;
+  z-index:300;background:#f4f6f9;padding:8px;overflow:hidden;
+}
+#editView.work-mode>.panel:first-child{
+  display:flex;flex:1 1 0;min-height:0;margin:0;overflow:hidden;
+  box-shadow:0 8px 28px #10233d16;
+}
+#editView.work-mode>.panel:first-child>.panel-pad{
+  display:flex;flex-direction:column;flex:1 1 0;min-height:0;
+  padding:10px;overflow:hidden;gap:0;
+}
+#editView.work-mode>.panel:nth-child(2){display:none}
+#editView.work-mode .work-only{display:flex}
+#editView.work-mode .section-title{flex:0 0 auto;margin-bottom:8px}
+#editView.work-mode .section-title h2{font-size:16px}
+#editView.work-mode .section-title>small{display:none}
+#editView.work-mode .preview-toolbar{flex:0 0 auto;gap:6px;margin-bottom:8px}
+#editView.work-mode .preview-frame{
+  flex:1 1 0;height:1px!important;min-height:60px;
+  overflow:auto!important;overscroll-behavior:contain;
+  touch-action:pan-x pan-y;
+}
+#editView.work-mode .preview-inner{height:auto;min-height:0;padding:10px}
+#editView.work-mode .bottom-row-shift,
+#editView.work-mode #seatEditor,
+#editView.work-mode .panel-pad>.tip{display:none!important}
+.work-toggle{white-space:nowrap}
+.work-header-actions{display:flex;align-items:center;gap:8px}
+.work-dock{
+  display:none;flex:0 0 auto;flex-direction:column;gap:8px;
+  margin-top:8px;padding:9px;background:#f5f8fc;
+  border:1px solid #dbe5ef;border-radius:12px;
+}
+#editView.work-mode .work-dock{display:flex}
+.work-row-line,.work-action-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.work-row-line{justify-content:space-between}
+.work-row-choice{display:flex;align-items:center;gap:7px;min-width:0}
+.work-row-choice label,.work-seat-choice label{font-size:12px;color:#53657b;font-weight:700}
+#workRowSelect{min-height:38px;max-width:170px;min-width:95px;padding:6px 8px}
+.work-target{display:flex;gap:4px;align-items:center}
+.work-target .btn[aria-pressed="true"]{background:#d8eaff;border-color:#79aadd;color:#104f83}
+.work-move-buttons{display:grid;grid-template-columns:repeat(4,minmax(42px,1fr));gap:6px;flex:1 1 235px}
+.work-move-buttons .btn{min-height:42px;font-size:19px;touch-action:manipulation}
+.work-seat-choice{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+#workSeatNumber{width:74px;min-width:0;min-height:38px;text-align:center;padding:6px}
+.work-status{font-size:12px;color:#53657b;min-height:16px}
+#editView.work-mode .preview-toolbar .zoom-control{margin-left:auto}
+#editView.work-mode .seat-svg.seat-edit .seat{cursor:grab}
+@media(max-width:600px){
+ #editView.work-mode{padding:0;background:white}
+ #editView.work-mode>.panel:first-child{border:0;border-radius:0;box-shadow:none}
+ #editView.work-mode>.panel:first-child>.panel-pad{padding:8px}
+ #editView.work-mode .section-title h2{font-size:14px}
+ #editView.work-mode .preview-toolbar{margin-bottom:5px}
+ #editView.work-mode .preview-toolbar .btn{padding:6px 9px;min-height:34px}
+ .work-dock{padding:8px;margin-top:5px;gap:6px;border-radius:9px}
+ .work-row-line{flex-wrap:nowrap;gap:5px}
+ .work-row-choice{flex:1 1 0}
+ #workRowSelect{width:100%;max-width:none;min-width:0}
+ .work-target{flex-shrink:0}
+ .work-target .btn{padding:7px 10px}
+ .work-action-line{flex-wrap:wrap;gap:6px}
+ .work-move-buttons{flex:1 1 100%;order:0}
+ .work-seat-choice{flex:1 1 100%;order:1;justify-content:space-between}
+ .work-status{font-size:11px}
+}
