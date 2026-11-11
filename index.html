@@ -233,8 +233,9 @@
   <div class="studio-modal-content">
     <label class="studio-input-label" for="studioSeatNumber">Номер места</label>
     <input class="field" id="studioSeatNumber" maxlength="16" autocomplete="off">
+    <button type="button" class="btn studio-inner-shortcut" id="studioSeatInnerStair">＋ Лестница после места</button>
     <div class="studio-modal-actions">
-      <button type="button" class="btn" id="studioSeatGapAdd">＋ Проход после</button>
+      <button type="button" class="btn" id="studioSeatGapAdd">＋ Промежуток</button>
       <button type="button" class="btn" id="studioSeatGapRemove">− Убрать проход</button>
       <button type="button" class="btn danger" id="studioSeatDelete">Удалить место</button>
     </div>
@@ -249,6 +250,14 @@
       <button type="button" class="btn studio-stair-button" id="studioStairRight" aria-pressed="false">Справа</button>
     </div>
     <select id="stairSide" class="field" aria-label="Расположение лестницы" hidden><option value="none">Нет</option><option value="left">Слева</option><option value="right">Справа</option><option value="both">С обеих сторон</option></select>
+    <div class="studio-inner-stairs">
+      <div class="studio-input-label">Между местами</div>
+      <div id="studioInnerStairsList" class="studio-inner-stairs-list"></div>
+      <div class="studio-inner-stairs-add">
+        <select id="studioInnerStairAfter" class="field" aria-label="Между какими местами поставить лестницу"></select>
+        <button type="button" class="btn" id="studioInnerStairAdd">＋ Добавить</button>
+      </div>
+    </div>
     <div class="studio-modal-actions">
       <button type="button" class="btn" id="studioRenumber">⇄ Перенумеровать ряд</button>
       <button type="button" class="btn" id="studioStraighten">Выровнять ряд</button>
