@@ -14,7 +14,13 @@
   const esc=safeText;
   const rowById=id=>getSector().rows.find(row=>row.id===id);
   const isEdit=()=>mode==='edit';
-  const serial=()=>JSON.stringify(project);
+  // Autosave changes project.updatedAt on every write. Ignoring that metadata
+  // keeps Undo/Redo limited to actual editing operations, not phantom steps.
+  const serial=()=>{
+    const data={...project};
+    delete data.updatedAt;
+    return JSON.stringify(data);
+  };
   const compact=n=>String(n);
   const mobile=()=>window.innerWidth<=710;
 
@@ -22,6 +28,8 @@
   window.ArenaUX={
     canDragSeat(rowId){return tool==='move'&&!rowById(rowId)?.locked},
     getTool(){return tool},
+    setTool(next){return setTool(next);},
+    focusRow(id){return focusRow(id);},
     check:checkDiagram,
     async backupBeforeImport(){
       // The last valid project stays recoverable even when import replaces it.
