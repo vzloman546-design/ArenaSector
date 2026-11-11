@@ -21,26 +21,26 @@
     const leftSeat=Math.min(...all.map(seat=>seat.x));
     const rightSeat=Math.max(...all.map(seat=>seat.x+seatWidth(seat)));
     return {
-      left:shift+leftSeat-34,
-      right:shift+rightSeat+13,
+      left:shift+leftSeat-27,
+      right:shift+rightSeat+12,
       y:Math.max(20,y1),
       height:Math.max(30,y2-Math.max(20,y1)),
-      width:20
+      width:14
     };
   }
 
+  // Light, unobtrusive side marker with step treads. No oversized text.
   function stairSVG(x,y,w,h,side){
-    const centerX=x+w/2,centerY=y+h/2;
     let steps='';
-    for(let k=12;k<h-5;k+=13)
-      steps+='<line x1="'+(x+3)+'" y1="'+(y+k)+'" x2="'+(x+w-3)+
-        '" y2="'+(y+k)+'" stroke="#8398b0" stroke-width="1.25"/>';
-    const label=h>92?
-      '<text x="'+centerX+'" y="'+centerY+'" text-anchor="middle" dominant-baseline="middle" font-size="9" font-weight="700" fill="#344c67" transform="rotate(-90 '+centerX+' '+centerY+')">ЛЕСТНИЦА</text>':'';
-    return '<g class="sector-stair" role="img" aria-label="Лестничный проход '+(side==='left'?'слева':'справа')+
-      ' от сектора"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+
-      '" rx="2" fill="#e7edf5" stroke="#71869d" stroke-width="1.2"/>'+
-      steps+label+'</g>';
+    for(let k=10;k<h-4;k+=14)
+      steps+='<line x1="'+(x+2)+'" y1="'+(y+k)+'" x2="'+(x+w-2)+
+        '" y2="'+(y+k)+'" stroke="#8c9eae" stroke-width="1"/>';
+    const name='Лестница '+(side==='left'?'слева':'справа')+' от сектора';
+    return '<g class="sector-stair" role="img" aria-label="'+name+
+      '" pointer-events="none"><title>'+name+'</title>'+
+      '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+
+      '" rx="2" fill="#f1f5f9" stroke="#b7c4d1" stroke-width="0.8"/>'+
+      steps+'</g>';
   }
 
   const oldSeatSvg=seatSvg;
@@ -56,22 +56,17 @@
     return svg.replace('</svg>',shapes+'</svg>');
   };
 
-  function canvasStairs(ctx,x,y,w,h,side){
+  function canvasStairs(ctx,x,y,w,h){
     ctx.save();
-    ctx.fillStyle='#e7edf5';ctx.strokeStyle='#71869d';ctx.lineWidth=1.2;
+    ctx.fillStyle='#f1f5f9';ctx.strokeStyle='#b7c4d1';ctx.lineWidth=0.8;
     ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);
-    ctx.strokeStyle='#8398b0';ctx.lineWidth=1.25;
-    for(let k=12;k<h-5;k+=13){
-      ctx.beginPath();ctx.moveTo(x+3,y+k);ctx.lineTo(x+w-3,y+k);ctx.stroke();
-    }
-    if(h>92){
-      ctx.translate(x+w/2,y+h/2);
-      ctx.rotate(-Math.PI/2);
-      ctx.fillStyle='#344c67';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.font='bold 10px Arial,sans-serif';ctx.fillText('ЛЕСТНИЦА',0,0);
+    ctx.strokeStyle='#8c9eae';ctx.lineWidth=1;
+    for(let k=10;k<h-4;k+=14){
+      ctx.beginPath();ctx.moveTo(x+2,y+k);ctx.lineTo(x+w-2,y+k);ctx.stroke();
     }
     ctx.restore();
   }
+
   const oldExport=drawExportCanvas;
   drawExportCanvas=function(id,section){
     const canvas=oldExport(id,section);
@@ -89,8 +84,8 @@
     const ctx=canvas.getContext('2d');
     if(!ctx)return canvas;
     for(const side of sides(stairsFor(section))){
-      const x=side==='left'?100+minLeft-minX-35:100+maxRight-minX+17;
-      canvasStairs(ctx,x,y,21,h,side);
+      const x=side==='left'?100+minLeft-minX-29:100+maxRight-minX+15;
+      canvasStairs(ctx,x,y,14,h);
     }
     return canvas;
   };
