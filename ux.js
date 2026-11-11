@@ -247,6 +247,18 @@
     }
     renderInspector();
   }
+  // Selecting a row in a list should reveal it on the diagram without resizing it.
+  function followSelectedRow(){
+    const id=selectedRow;
+    requestAnimationFrame(()=>{
+      if(isEdit()&&id&&rowById(id))focusRow(id);
+    });
+  }
+  el('studioRow').addEventListener('change',followSelectedRow);
+  el('studioRowForm').addEventListener('submit',followSelectedRow);
+  el('studioRowsList').addEventListener('click',e=>{
+    if(e.target.closest('[data-studio-row-action="select"]'))followSelectedRow();
+  });
   function issuesForCurrent(sector=getSector(),sectorId=chosen){
     const issues=[];
     for(const row of sector.rows){
@@ -425,7 +437,7 @@
       selectedRow=row.id;
     }
     selectedSeat=null;selectedRows=new Set([selectedRow]);
-    changed();el('uxBatchDialog').close();toast('Ряды добавлены: '+count);
+    changed();el('uxBatchDialog').close();followSelectedRow();toast('Ряды добавлены: '+count);
   });
 
   // Row groups, seat and stairs share one contextual inspector.
