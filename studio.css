@@ -40,6 +40,8 @@ body.studio-active .workspace-head{
 }
 body.studio-active .workspace-head>div:first-child{min-width:0}
 body.studio-active .workspace-head h2{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.studio-active .workspace-head>div:first-child{display:none}
+body.studio-active .workspace-head{justify-content:center}
 body.studio-active .tabs{padding:3px;gap:2px}
 body.studio-active .tab{padding:7px 13px;font-size:12px}
 body.studio-active #editView{
@@ -255,3 +257,9 @@ body.studio-active #editView{
  .studio-toolbar{padding-top:4px;padding-bottom:4px}
  .studio-dock{padding-top:5px;padding-bottom:5px;min-height:0}
 }
+
+/* Keep the interface focused on actionable controls, not explanatory notes. */
+#mapView .section-title{display:none}
+#viewView .section-title>div{display:none}
+#viewView .tip{display:none}
+.report-subtitle{display:none}
