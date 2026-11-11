@@ -199,7 +199,12 @@
     const inspector=el('uxInspector');
     inspector?.classList.remove('is-hidden');
     if(window.innerWidth<=710)inspector?.classList.add('is-open');
-    const numberField=selectedSeat?el('uxSeatNumber'):el('uxRowNumber');
+    let numberField=selectedSeat?el('uxSeatNumber'):el('uxRowNumber');
+    if(!numberField&&getRow()&&ux()?.getTool()==='row'){
+      // The multi-row panel has no number field: switch to single-row properties.
+      ux()?.setTool?.('select');
+      numberField=el('uxRowNumber');
+    }
     if(numberField){numberField.focus();numberField.select?.();return true;}
     return false;
   }
