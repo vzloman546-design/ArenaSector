@@ -195,16 +195,13 @@
   board.appendChild(mobileButton);
 
   // Preserve a useful editing scale rather than shrinking the entire sector.
-  function manualScale(value,center=false){
+  function manualScale(value){
     if(!isEdit())return;
-    // The old Zoom+ handler disables the automatic "fit" mode.
-    el('zoomEditIn').click();
-    zoom.edit=Math.max(.35,Math.min(2.5,Number(value)||1));
-    renderPreview('edit');
-    if(center){frame.scrollLeft=Math.max(0,(frame.scrollWidth-frame.clientWidth)/2);frame.scrollTop=Math.max(0,(frame.scrollHeight-frame.clientHeight)/2)}
+    // All zoom controls share the same state and sizing logic.
+    window.ArenaStudio?.zoomTo(value);
   }
-  el('uxWorkScale').addEventListener('click',()=>manualScale(1,true));
-  el('uxFitAll').addEventListener('click',()=>el('studioFit').click());
+  el('uxWorkScale').addEventListener('click',()=>window.ArenaStudio?.workScale());
+  el('uxFitAll').addEventListener('click',()=>window.ArenaStudio?.fitAll());
   // Keep the point underneath the mouse stationary when zooming.
   frame.addEventListener('wheel',event=>{
     if(!isEdit())return;
@@ -215,7 +212,7 @@
     }
     const previous=zoom.edit;
     const amount=event.deltaMode===1?event.deltaY*15:event.deltaMode===2?event.deltaY*160:event.deltaY;
-    const next=Math.max(.35,Math.min(2.5,previous*(amount<0?1.12:1/1.12)));
+    const next=Math.max(.02,Math.min(2.5,previous*(amount<0?1.12:1/1.12)));
     if(next===previous)return;
     const area=frame.getBoundingClientRect();
     const px=Math.max(0,event.clientX-area.left);
