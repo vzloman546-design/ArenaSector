@@ -251,7 +251,12 @@
     </div>
     <select id="stairSide" class="field" aria-label="Расположение лестницы" hidden><option value="none">Нет</option><option value="left">Слева</option><option value="right">Справа</option><option value="both">С обеих сторон</option></select>
     <div class="studio-inner-stairs">
-      <div class="studio-input-label">Между местами</div>
+      <div class="studio-input-label">Вертикальные лестницы</div>
+      <button type="button" class="btn primary" id="studioPlaceStairLine">＋ Поставить на схеме</button>
+      <div id="studioStairLinesList" class="studio-inner-stairs-list"></div>
+    </div>
+    <div class="studio-inner-stairs">
+      <div class="studio-input-label">После места выбранного ряда</div>
       <div id="studioInnerStairsList" class="studio-inner-stairs-list"></div>
       <div class="studio-inner-stairs-add">
         <select id="studioInnerStairAfter" class="field" aria-label="Между какими местами поставить лестницу"></select>
