@@ -234,8 +234,8 @@
     }
     renderInspector();
   }
-  function issuesForCurrent(){
-    const sector=getSector(),issues=[];
+  function issuesForCurrent(sector=getSector(),sectorId=chosen){
+    const issues=[];
     for(const row of sector.rows){
       const labels=new Set();
       for(const seat of row.seats){
@@ -261,18 +261,21 @@
         }
       }
     }
-    return issues;
+    return issues.map(issue=>({...issue,sectorId,text:'Сектор '+sectorId+' · '+issue.text}));
+  }
+  function issuesForProject(){
+    return Object.entries(project.sectors).flatMap(([id,section])=>section.rows.length?issuesForCurrent(section,id):[]);
   }
   function highlightIssues(issues){
     el('editCanvas').querySelectorAll('.seat.ux-problem').forEach(x=>x.classList.remove('ux-problem'));
     for(const issue of issues){
-      if(!issue.seatId)continue;
+      if(issue.sectorId!==chosen||!issue.seatId)continue;
       el('editCanvas').querySelector('[data-seat="'+issue.seatId+'"]')?.classList.add('ux-problem');
     }
   }
   let issues=[];
   function checkDiagram(){
-    issues=issuesForCurrent();
+    issues=issuesForProject();
     el('uxCheckSummary').textContent=issues.length?issues.length+' замечаний':'Ошибок не найдено';
     el('uxCheckResults').innerHTML=issues.length?issues.map((issue,i)=>
       '<div class="ux-issue ux-'+issue.severity+'"><div><strong>'+esc(issue.text)+'</strong></div>'+
@@ -288,6 +291,7 @@
     const issue=issues[Number(b.dataset.uxIssue)];
     el('uxCheckDialog').close();
     if(!issue)return;
+    if(issue.sectorId!==chosen)choose(issue.sectorId,'edit');
     focusRow(issue.rowId);selectedSeat=issue.seatId;
     renderRowSelectionOnly();renderInspector();
   });
@@ -299,7 +303,7 @@
   // Audit on PNG export; allow an explicit override from the report dialog.
   el('exportPngBtn').addEventListener('click',e=>{
     if(bypassExport)return;
-    const errs=issuesForCurrent();
+    const errs=issuesForProject();
     if(errs.length){
       e.preventDefault();e.stopImmediatePropagation();
       checkDiagram();
@@ -564,6 +568,12 @@
   }
 
   // Keep inspector and snapshots in step with sector changes and imported files.
+  const oldSetMode=setMode;
+  setMode=function(next){
+    const result=oldSetMode(next);
+    if(next==='edit')requestAnimationFrame(()=>{if(isEdit())manualScale(1)});
+    return result;
+  };
   const oldChoose=choose;
   choose=function(id,next='edit'){
     selectedRows.clear();stairIndex=-1;
