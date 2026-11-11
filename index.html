@@ -9,6 +9,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./icon.svg">
   <link rel="stylesheet" href="./reports.css">
+  <link rel="stylesheet" href="./workmode.css">
   <style>
 /* Map lodge bands and compact lodge selection dialog */
 .stadium.original .map-lodge { cursor: pointer; }
@@ -150,7 +151,31 @@
       <div class="panel"><div class="workspace-head"><div><h2 id="pageTitle">Схема стадиона</h2><p id="pageSubtitle">Нажмите сектор на карте или выберите его из списка</p></div><nav class="tabs" aria-label="Режим работы"><button class="tab active" data-tab="map">Карта</button><button class="tab" data-tab="edit">Редактор</button><button class="tab" data-tab="view">Просмотр</button><button class="tab" data-tab="reports">Отчёты</button></nav></div></div>
       <section id="mapView" class="view active panel"><div class="panel-pad"><div class="section-title"><h2>Общая схема стадиона</h2><small>Нажми на номер сектора</small></div><div class="map-wrap"><svg id="stadiumMap" class="stadium original" viewBox="0 0 852 768" role="img" aria-label="Схема стадиона с кликабельными секторами"></svg></div><div class="map-help"><div class="legend"><span><i class="dot" style="background:var(--A)"></i>A · запад</span><span><i class="dot" style="background:var(--B)"></i>B · север</span><span><i class="dot" style="background:var(--C)"></i>C · восток</span><span><i class="dot" style="background:var(--D)"></i>D · юг</span></div><span>План стадиона — из предоставленного изображения</span></div></div></section>
       <section id="editView" class="view">
-        <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Расстановка мест</h2><small>Выбери ряд или отдельное кресло на схеме</small></div><div class="preview-toolbar"><div class="box-row"><button type="button" class="btn small" id="multiSeatMode" aria-pressed="false">▣ Выбрать несколько мест</button><button type="button" class="btn primary small" id="mergeSeats" hidden disabled>Объединить (0)</button></div><div class="zoom-control"><button class="btn small icon" id="zoomEditOut" title="Уменьшить">−</button><output id="editZoomLabel">100%</output><button class="btn small icon" id="zoomEditIn" title="Увеличить">＋</button></div></div><div class="preview-frame"><div id="editCanvas" class="preview-inner"></div></div><div class="bottom-row-shift" aria-label="Сдвиг выбранного ряда"><div class="box-row"><button class="btn small" id="shiftRowLeft" title="Сдвинуть выбранный ряд влево на половину шага между креслами">Ряд ← ½ места</button><button class="btn small" id="shiftRowRight" title="Сдвинуть выбранный ряд вправо на половину шага между креслами">Ряд ½ места →</button><button class="btn small" id="shiftRowUp" title="Сдвинуть выбранный ряд вверх на 16 единиц">Ряд ↑ ½ места</button><button class="btn small" id="shiftRowDown" title="Сдвинуть выбранный ряд вниз на 16 единиц">Ряд ½ места ↓</button></div></div><div id="seatEditor" class="seat-editor" hidden></div><p class="tip">Кресла можно перетаскивать мышью или пальцем. Для точной корректировки нажми на кресло и используй кнопки перемещения. Пробел между креслами добавляется отдельной кнопкой.</p></div></div>
+        <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Расстановка мест</h2><div class="work-header-actions"><small>Выбери ряд или отдельное кресло на схеме</small><button type="button" class="btn small work-toggle" id="workModeToggle" aria-pressed="false">⛶ Удобный режим</button></div></div><div class="preview-toolbar"><div class="box-row"><button type="button" class="btn small" id="multiSeatMode" aria-pressed="false">▣ Выбрать несколько мест</button><button type="button" class="btn primary small" id="mergeSeats" hidden disabled>Объединить (0)</button></div><div class="zoom-control"><button class="btn small icon" id="zoomEditOut" title="Уменьшить">−</button><output id="editZoomLabel">100%</output><button class="btn small icon" id="zoomEditIn" title="Увеличить">＋</button></div></div><div class="preview-frame"><div id="editCanvas" class="preview-inner"></div></div><div class="bottom-row-shift" aria-label="Сдвиг выбранного ряда"><div class="box-row"><button class="btn small" id="shiftRowLeft" title="Сдвинуть выбранный ряд влево на половину шага между креслами">Ряд ← ½ места</button><button class="btn small" id="shiftRowRight" title="Сдвинуть выбранный ряд вправо на половину шага между креслами">Ряд ½ места →</button><button class="btn small" id="shiftRowUp" title="Сдвинуть выбранный ряд вверх на 16 единиц">Ряд ↑ ½ места</button><button class="btn small" id="shiftRowDown" title="Сдвинуть выбранный ряд вниз на 16 единиц">Ряд ½ места ↓</button></div></div><div id="seatEditor" class="seat-editor" hidden></div><p class="tip">Кресла можно перетаскивать мышью или пальцем. Для точной корректировки нажми на кресло и используй кнопки перемещения. Пробел между креслами добавляется отдельной кнопкой.</p><section id="workDock" class="work-dock" aria-label="Быстрое управление креслами и рядами">
+<div class="work-row-line">
+  <div class="work-row-choice"><label for="workRowSelect">Ряд</label><select id="workRowSelect" class="field" aria-label="Выбранный ряд"></select></div>
+  <div class="work-target" role="group" aria-label="Что двигать">
+    <button type="button" id="workTargetRow" class="btn small" aria-pressed="true">Весь ряд</button>
+    <button type="button" id="workTargetSeat" class="btn small" aria-pressed="false">Кресло</button>
+  </div>
+</div>
+<div class="work-action-line">
+  <div class="work-move-buttons" role="group" aria-label="Перемещение на половину места">
+    <button type="button" class="btn" data-work-move="left" aria-label="Влево на половину места">←</button>
+    <button type="button" class="btn" data-work-move="right" aria-label="Вправо на половину места">→</button>
+    <button type="button" class="btn" data-work-move="up" aria-label="Вверх на половину места">↑</button>
+    <button type="button" class="btn" data-work-move="down" aria-label="Вниз на половину места">↓</button>
+  </div>
+  <div class="work-seat-choice">
+    <label for="workSeatNumber">№ места</label><input id="workSeatNumber" class="field" maxlength="16" aria-label="Номер выбранного кресла">
+    <button type="button" class="btn small" id="workAddSeat">＋ Место</button>
+    <button type="button" class="btn small" id="workAddRow">＋ Ряд</button>
+    <button type="button" class="btn small" id="workReverse" title="Сменить направление нумерации">⇄</button>
+    <button type="button" class="btn small" id="workFit" title="Вместить схему по высоте">Вместить</button>
+  </div>
+</div>
+<div id="workStatus" class="work-status" aria-live="polite"></div>
+</section></div></div>
       <div class="panel"><div class="panel-pad"><div class="section-title"><h2>Ряды</h2><small>Первый ряд снизу, у поля</small></div><div id="rowList" class="row-list"></div><div class="new-row" style="margin-top:12px"><div class="control"><label for="newRowLabel">Номер ряда</label><input id="newRowLabel" class="field" type="text" maxlength="20" value="1"></div><div class="control"><label for="newRowCount">Мест в ряду</label><input id="newRowCount" class="field" type="number" min="1" max="250" value="20"></div><button class="btn primary" id="addRow">＋ Добавить ряд</button></div></div></div>
         </section>
       <section id="viewView" class="view panel"><div class="panel-pad"><div class="section-title"><div><h2 id="viewTitle">Просмотр сектора</h2><small>Первый ряд у поля · схема для Билетона</small></div><button class="btn" id="fullscreenBtn">⛶ На весь экран</button></div><div class="preview-toolbar"><div id="viewStats" class="muted" style="font-size:12px"></div><div class="zoom-control"><button class="btn small icon" id="zoomViewOut">−</button><output id="viewZoomLabel">100%</output><button class="btn small icon" id="zoomViewIn">＋</button></div></div><div class="preview-frame" style="height:min(62vh,610px)"><div id="viewCanvas" class="preview-inner"></div></div><p class="tip">На телефоне можно прокручивать увеличенную схему по горизонтали и вертикали. Для изменения нажми вкладку «Редактор».</p></div></section>
@@ -595,6 +620,7 @@ start();
 })();
 
 </script>
+<script src="./workmode.js"></script>
 <script src="./reports.js"></script>
 </body>
 </html>
