@@ -89,7 +89,7 @@
     $s('studioRowsCount').textContent=rows.length+' рядов';
     const entries=rows.map((row,i)=>'<div class="studio-row-item'+(row.id===selectedRow?' is-active':'')+'">'+
       '<button type="button" class="studio-row-choice" data-studio-row-action="select" data-row-id="'+esc(row.id)+'">'+
-      '<strong>'+esc(row.label)+'</strong><small>'+row.seats.length+' мест</small></button>'+
+      '<strong>'+esc(row.label)+'</strong>'+(row.locked?'<span class="ux-lock-indicator" title="Ряд заблокирован">🔒</span>':'')+'<small>'+row.seats.length+' мест</small></button>'+
       '<div class="studio-row-buttons">'+
         '<select class="studio-row-action-select" aria-label="Действия с рядом '+esc(row.label)+'" data-studio-row-menu="'+esc(row.id)+'">'+
           '<option value="">⋯</option>'+
