@@ -126,7 +126,8 @@
     // The visible stage includes padding around the SVG; account for it.
     const availableWidth=Math.max(20,frame.clientWidth-44);
     const availableHeight=Math.max(20,frame.clientHeight-44);
-    return Math.min(availableWidth/width,availableHeight/height,1.5);
+    // Fit must never enlarge the entire scheme beyond its natural size.
+    return Math.max(.02,Math.min(availableWidth/width,availableHeight/height,1));
   }
   function centerWorkingView(){
     const svg=canvas.querySelector('svg[data-base-width]');
@@ -154,12 +155,16 @@
     if(!svg||full===null)return;
     // Full view always contains the entire sector, even for very large plans.
     // Working view is deliberately larger, so chair numbers stay clickable.
+    // Working zoom must be visibly larger than the full-sector overview.
+    // On large sectors its floor prevents tiny, unclickable seat labels.
     const next=readableScale
-      ?Math.min(2.5,Math.max(1,full*1.35))
+      ?Math.min(2.5,Math.max(1.25,full*1.8))
       :full;
     zoom.edit=next;
     svg.setAttribute('width',String(Math.round(Number(svg.dataset.baseWidth)*next)));
     svg.setAttribute('height',String(Math.round(Number(svg.dataset.baseHeight)*next)));
+    svg.style.marginLeft=readableScale?'0':'auto';
+    svg.style.marginRight=readableScale?'0':'auto';
     $s('editZoomLabel').textContent=Math.round(next*100)+'%';
     scaleButtons(readableScale?'work':'all');
     if(resetScroll){
