@@ -96,3 +96,15 @@
  .ux-tools{gap:2px}
  .ux-tools button span{display:none}
 }
+
+/* Active tools and status, with accessible visual feedback. */
+.ux-board.tool-row .seat.ux-row-selected .seat-body{stroke:#e19a20!important;stroke-width:2.6!important;fill:#75aada!important}
+.ux-board.tool-row .seat.ux-row-selected .seat-text{fill:#142f4d!important}
+.seat.ux-problem .seat-body{stroke:#e13d47!important;stroke-width:2.8!important}
+.ux-board.tool-stair .vertical-stairway,.ux-board.tool-stair .vertical-stairway rect{pointer-events:all!important;cursor:ew-resize!important}
+.ux-prop-row .btn[aria-pressed="true"]{border-color:#5e9ed0;background:#e4f2fd;color:#155e91}
+#editView .ux-board .preview-frame.studio-stage{touch-action:pan-x pan-y}
+.ux-board.tool-pan .preview-frame.studio-stage{touch-action:none}
+.ux-board.tool-pan .preview-frame.studio-stage .seat{pointer-events:none}
+.ux-board.tool-stair .vertical-stairway:hover rect{fill:#d5eaf7;stroke:#3b85b9}
+@media(max-width:710px){.ux-inspector.is-open{max-height:min(62%,430px)}}
