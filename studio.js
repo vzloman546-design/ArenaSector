@@ -329,9 +329,22 @@
     changed();
   }
   $s('studioStairLinesList').addEventListener('click',e=>{
-    const button=e.target.closest('[data-stair-line-remove]');
-    if(!button)return;
-    removeVerticalStairX(Number(button.dataset.stairLineRemove));
+    const moveButton=e.target.closest('[data-stair-line-shift]');
+    if(moveButton){
+      const oldX=Number(moveButton.dataset.stairLineX);
+      const step=Number(moveButton.dataset.stairLineShift);
+      const nextX=oldX+step;
+      const lines=verticalStairCuts(getSector());
+      if(!Number.isFinite(oldX)||!Number.isFinite(nextX)||Math.abs(nextX)>50000)return;
+      if(!lines.includes(oldX)||lines.some(other=>other!==oldX&&Math.abs(other-nextX)<16)){
+        toast('Слишком близко к другой лестнице');return;
+      }
+      getSector().stairLines=lines.map(x=>x===oldX?nextX:x).sort((a,b)=>a-b);
+      changed();
+      return;
+    }
+    const removeButton=e.target.closest('[data-stair-line-remove]');
+    if(removeButton)removeVerticalStairX(Number(removeButton.dataset.stairLineRemove));
   });
   function renderInnerStairs(){
     const sector=getSector();
@@ -339,7 +352,10 @@
     $s('studioPlaceStairLine').disabled=cuts.length>=20;
     $s('studioStairLinesList').innerHTML=cuts.map((x,i)=>
       '<div class="studio-inner-stair-item"><span>Лестница '+(i+1)+'</span>'+
-      '<button type="button" data-stair-line-remove="'+x+'" aria-label="Удалить лестницу">✕</button></div>'
+      '<div class="studio-stair-line-actions">'+
+      '<button type="button" data-stair-line-shift="-4" data-stair-line-x="'+x+'" title="Сдвинуть лестницу влево" aria-label="Сдвинуть лестницу влево">←</button>'+
+      '<button type="button" data-stair-line-shift="4" data-stair-line-x="'+x+'" title="Сдвинуть лестницу вправо" aria-label="Сдвинуть лестницу вправо">→</button>'+
+      '<button type="button" data-stair-line-remove="'+x+'" title="Удалить лестницу" aria-label="Удалить лестницу">✕</button></div></div>'
     ).join('');
     const row=getRow()?.seats.length>=2?getRow():sector.rows.find(r=>r.seats.length>=2);
     const ordered=row?rowStairLayout(row,sector).ordered:[];
