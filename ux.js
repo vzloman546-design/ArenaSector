@@ -91,9 +91,14 @@
     for(const btn of board.querySelectorAll('[data-ux-tool]'))
       btn.setAttribute('aria-pressed',String(btn.dataset.uxTool===next));
     if(next==='row'){
-      if(getRow())selectedRows.add(getRow().id);
+      selectedRows=new Set(getRow()?[getRow().id]:[]);
       selectedSeat=null;
-    } else if(next!=='stair')stairIndex=-1;
+    }else{
+      selectedRows.clear();
+      if(next!=='stair')stairIndex=-1;
+    }
+    if(next==='stair')window.ArenaStudio?.beginStair();
+    else window.ArenaStudio?.cancelStair();
     if(next==='pan')frame.style.touchAction='none';
     else frame.style.touchAction='';
     paintRowSelection();
@@ -128,7 +133,7 @@
   el('uxWorkScale').addEventListener('click',()=>manualScale(1,true));
   el('uxFitAll').addEventListener('click',()=>el('studioFit').click());
   frame.addEventListener('wheel',event=>{
-    if(!isEdit()||!event.ctrlKey)return;
+    if(!isEdit())return;
     event.preventDefault();
     manualScale(zoom.edit*(event.deltaY<0?1.12:.89));
   },{passive:false});
@@ -159,8 +164,12 @@
     if(!hit)return;
     event.preventDefault();
     const id=hit.dataset.row;
-    if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey)selectedRows.clear();
-    if(selectedRows.has(id)&&(event.ctrlKey||event.metaKey))selectedRows.delete(id);
+    // Every tap toggles a row, including on touch screens.
+    if(event.shiftKey&&selectedRow){
+      const rows=getSector().rows;
+      const first=rows.findIndex(row=>row.id===selectedRow),last=rows.findIndex(row=>row.id===id);
+      if(first>=0&&last>=0)rows.slice(Math.min(first,last),Math.max(first,last)+1).forEach(row=>selectedRows.add(row.id));
+    }else if(selectedRows.has(id))selectedRows.delete(id);
     else selectedRows.add(id);
     selectedRow=id;selectedSeat=null;
     event.stopImmediatePropagation();
@@ -180,6 +189,7 @@
     if(!isEdit()||tool!=='stair')return;
     const marker=event.target.closest('.vertical-stairway');
     if(!marker)return;
+    window.ArenaStudio?.cancelStair();
     const svg=marker.closest('svg');
     if(!svg?.getScreenCTM())return;
     const all=[...svg.querySelectorAll('.vertical-stairway')];
@@ -203,7 +213,7 @@
   frame.addEventListener('pointerup',event=>{
     if(!stairDrag||event.pointerId!==stairDrag.pointer)return;
     const d=stairDrag;stairDrag=null;
-    if(!d.dx)return;
+    if(!d.dx){window.ArenaStudio?.cancelStair();return;}
     const cuts=verticalStairCuts(getSector());
     const newX=d.initial+d.dx;
     if(Math.abs(newX)>50000||cuts.some((v,i)=>i!==d.index&&Math.abs(v-newX)<18)){
@@ -211,6 +221,7 @@
     }
     getSector().stairLines=cuts.map((v,i)=>i===d.index?newX:v).sort((a,b)=>a-b);
     changed();stairIndex=verticalStairCuts(getSector()).indexOf(newX);
+    window.ArenaStudio?.cancelStair();
   },true);
 
   function rowCenter(row){
