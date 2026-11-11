@@ -146,6 +146,7 @@
   };
   const previousSetMode=setMode;
   setMode=function(next){
+    if(next==='edit'&&!getRow()&&getSector().rows.length)selectedRow=getSector().rows[0].id;
     const result=previousSetMode(next);
     document.body.classList.toggle('studio-active',next==='edit');
     if(next==='edit'){
@@ -242,6 +243,7 @@
     e.preventDefault();
     $s('newRowLabel').value=$s('studioNewRowLabel').value.trim();
     $s('newRowCount').value=$s('studioNewRowCount').value;
+    target='row';
     $s('addRow').click();
     rowsFormDefaults();
     renderRowsDialog();
@@ -292,6 +294,7 @@
       input.addEventListener('blur',()=>finish(true),{once:true});
       input.focus();input.select();
     }else{
+      if(action==='copy'||action==='delete')target='row';
       runOldRowAction(action,row.id);
       syncSelection();
     }
