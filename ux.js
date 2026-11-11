@@ -770,8 +770,8 @@
     history.length=0;future.length=0;
     updateHistoryButtons();
     setTool('select');
-    // For large sectors start at a legible scale; the Fit button retains the overview.
-    if(isEdit())manualScale(1);
+    // Studio owns the initial zoom preset. Do not replace it with manual zoom,
+    // which made both preset buttons appear inactive and confused their meaning.
     renderInspector();
   },{once:true});
 })();
