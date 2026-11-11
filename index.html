@@ -410,16 +410,29 @@ function rowLabelOffset(row){
 }
 // Internal stairways split all rows after the same left-to-right seating position.
 // Positions are visual, not stored chair numbers; source coordinates stay unchanged.
+// Fixed-X stairways stay aligned when different rows have different seat counts.
+const VERTICAL_STAIR_GAP=36;
+function verticalStairCuts(section){
+  return Array.isArray(section.stairLines)
+    ?section.stairLines.filter(x=>Number.isFinite(x)&&Math.abs(x)<=50000).sort((a,b)=>a-b)
+    :[];
+}
 function rowStairLayout(row,section){
   const ordered=[...row.seats].sort((a,b)=>a.x-b.x||row.seats.indexOf(a)-row.seats.indexOf(b));
   const marks=Array.isArray(section.innerStairs)
     ?section.innerStairs.filter(p=>Number.isInteger(p)&&p>0&&p<ordered.length).sort((a,b)=>a-b)
     :[];
-  const displayX=new Map();
+  const baseX=new Map();
   let shift=0,markIndex=0;
   for(let i=0;i<ordered.length;i++){
     if(markIndex<marks.length&&marks[markIndex]===i){shift+=42;markIndex++;}
-    displayX.set(ordered[i].id,ordered[i].x+shift);
+    baseX.set(ordered[i].id,ordered[i].x+shift);
+  }
+  const cuts=verticalStairCuts(section),displayX=new Map();
+  for(const seat of ordered){
+    const x=baseX.get(seat.id);
+    const toRight=cuts.filter(cut=>x+seatWidth(seat)/2>=cut).length;
+    displayX.set(seat.id,x+toRight*VERTICAL_STAIR_GAP);
   }
   const stairs=marks.map(after=>{
     const left=ordered[after-1],right=ordered[after];
@@ -427,8 +440,15 @@ function rowStairLayout(row,section){
     const leftOfRight=displayX.get(right.id);
     return {after,x:(rightOfLeft+leftOfRight-22)/2,width:22};
   });
-  return {ordered,displayX,stairs};
+  return {ordered,baseX,displayX,stairs};
 }
+function fixedStairSVG(x,y,w,h){
+  let treads='';
+  for(let k=10;k<h-4;k+=14)
+    treads+='<line x1="'+(x+3)+'" y1="'+(y+k)+'" x2="'+(x+w-3)+'" y2="'+(y+k)+'" stroke="#8da0b2" stroke-width="1"/>';
+  return '<g class="vertical-stairway" role="img" aria-label="Вертикальный лестничный проход" pointer-events="none"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="#edf3f9" stroke="#b5c3d2" stroke-width="1"/>'+treads+'</g>';
+}
+
 function drawStairwaySVG(x,y,w,h,after){
   let treads='';
   for(let k=8;k<h-3;k+=11)
@@ -456,7 +476,11 @@ const topMost=Math.min(...verticalPositions.flatMap(({row,base})=>[base+rowLabel
 const bottomMost=Math.max(...verticalPositions.flatMap(({row,base})=>[base+rowLabelOffset(row)+14,...row.seats.map(seat=>base+seat.y+16)]));
 const verticalShift=38-topMost;
 const h=Math.max(170,Math.ceil(bottomMost+verticalShift+50));
-let out=`<svg xmlns="http://www.w3.org/2000/svg" class="seat-svg ${editable?(multiSelectEnabled?'seat-edit multi-mode':'seat-edit'):''}" viewBox="0 0 ${w} ${h}" width="${w*zoom[kind]}" height="${h*zoom[kind]}" data-base-width="${w}" data-base-height="${h}" role="img" aria-label="Схема сектора ${safeText(chosen)}"><text class="seat-title" x="${w/2}" y="17" text-anchor="middle">ДАЛЬНИЕ РЯДЫ</text>`;
+let out=`<svg xmlns="http://www.w3.org/2000/svg" class="seat-svg ${editable?(multiSelectEnabled?'seat-edit multi-mode':'seat-edit'):''}" viewBox="0 0 ${w} ${h}" width="${w*zoom[kind]}" height="${h*zoom[kind]}" data-base-width="${w}" data-base-height="${h}" data-coord-shift="${shift}" role="img" aria-label="Схема сектора ${safeText(chosen)}"><text class="seat-title" x="${w/2}" y="17" text-anchor="middle">ДАЛЬНИЕ РЯДЫ</text>`;
+const fixedCuts=verticalStairCuts(s);
+const bandY=Math.max(20,Math.round(topMost+verticalShift-6));
+const bandEnd=Math.min(h-28,Math.round(bottomMost+verticalShift+6));
+fixedCuts.forEach((cut,i)=>{out+=fixedStairSVG(shift+cut+i*VERTICAL_STAIR_GAP-2,bandY,22,Math.max(25,bandEnd-bandY));});
 s.rows.forEach((row,i)=>{
   const base=49+(s.rows.length-1-i)*51,layout=layouts[i];
   out+=`<text class="seat-row-label" x="9" y="${base+7+rowLabelOffset(row)+verticalShift}">Р ${safeText(row.label)}</text>`;
@@ -512,7 +536,7 @@ const active=svg.querySelector(`[data-seat="${drag.s.id}"]`);if(active){const bo
 });const finish=event=>{if(!drag||event.pointerId!==drag.pointer)return;const moved=drag.moved;drag=null;if(moved)changed();else {renderRowSelectionOnly();renderSeatEditor()}};svg.addEventListener('pointerup',finish);svg.addEventListener('pointercancel',finish)}
 function renderRowSelectionOnly(){$$('#rowList .row-card').forEach(x=>x.classList.toggle('selected',x.querySelector('[data-row-select]')?.dataset.rowSelect===selectedRow));$$('#editCanvas .seat').forEach(x=>x.classList.toggle('selected',multiSelectEnabled?multiSelectedSeatIds.has(x.dataset.seat):x.dataset.seat===selectedSeat));updateMultiSelectControls();['shiftRowLeft','shiftRowRight','shiftRowUp','shiftRowDown'].forEach(id=>$(id).disabled=!getRow())}
 function zoomTo(kind,step){zoom[kind]=Math.min(2.5,Math.max(.6,Math.round((zoom[kind]+step)*10)/10));renderPreview(kind)}
-function validateImport(p){if(!p||p.schemaVersion!==1||p.kind!=='ArenaSectorProject'||typeof p.sectors!=='object'||!p.sectors)throw Error('Неизвестный формат проекта');const ids=Object.values(STANDS).flatMap(s=>s.sectors);for(const id of ids){const s=p.sectors[id];if(!s||typeof s!=='object'||!Array.isArray(s.rows))throw Error('Отсутствуют данные сектора '+id);if(s.rows.length>300)throw Error('Слишком много рядов');if(s.innerStairs!==undefined&&(!Array.isArray(s.innerStairs)||s.innerStairs.length>20||new Set(s.innerStairs).size!==s.innerStairs.length||s.innerStairs.some(n=>!Number.isInteger(n)||n<1||n>499)))throw Error('Неверные внутренние лестницы в секторе '+id);const rowIds=new Set();for(const r of s.rows){if(!Array.isArray(r.seats)||r.seats.length>500||!r.id||rowIds.has(r.id)||typeof r.label!=='string'||r.label.length>20)throw Error('Ошибка ряда в секторе '+id);rowIds.add(r.id);const nums=new Set();for(const seat of r.seats){if(!seat.id||typeof seat.number!=='string'||!seat.number||seat.number.length>16||nums.has(seat.number)||!Number.isFinite(seat.x)||!Number.isFinite(seat.y)||Math.abs(seat.x)>50000||Math.abs(seat.y)>50000)throw Error('Ошибка места в секторе '+id);if(seat.width!==undefined&&(!Number.isFinite(seat.width)||seat.width<26||seat.width>20000))throw Error('Ошибка ширины объединённого места в секторе '+id);if(seat.span!==undefined&&(!Number.isInteger(seat.span)||seat.span<1||seat.span>500))throw Error('Ошибка количества позиций объединённого места в секторе '+id);nums.add(seat.number)}}}return true}
+function validateImport(p){if(!p||p.schemaVersion!==1||p.kind!=='ArenaSectorProject'||typeof p.sectors!=='object'||!p.sectors)throw Error('Неизвестный формат проекта');const ids=Object.values(STANDS).flatMap(s=>s.sectors);for(const id of ids){const s=p.sectors[id];if(!s||typeof s!=='object'||!Array.isArray(s.rows))throw Error('Отсутствуют данные сектора '+id);if(s.rows.length>300)throw Error('Слишком много рядов');if(s.innerStairs!==undefined&&(!Array.isArray(s.innerStairs)||s.innerStairs.length>20||new Set(s.innerStairs).size!==s.innerStairs.length||s.innerStairs.some(n=>!Number.isInteger(n)||n<1||n>499)))throw Error('Неверные внутренние лестницы в секторе '+id);if(s.stairLines!==undefined&&(!Array.isArray(s.stairLines)||s.stairLines.length>20||new Set(s.stairLines).size!==s.stairLines.length||s.stairLines.some(x=>!Number.isFinite(x)||Math.abs(x)>50000)))throw Error('Неверные координаты лестниц в секторе '+id);const rowIds=new Set();for(const r of s.rows){if(!Array.isArray(r.seats)||r.seats.length>500||!r.id||rowIds.has(r.id)||typeof r.label!=='string'||r.label.length>20)throw Error('Ошибка ряда в секторе '+id);rowIds.add(r.id);const nums=new Set();for(const seat of r.seats){if(!seat.id||typeof seat.number!=='string'||!seat.number||seat.number.length>16||nums.has(seat.number)||!Number.isFinite(seat.x)||!Number.isFinite(seat.y)||Math.abs(seat.x)>50000||Math.abs(seat.y)>50000)throw Error('Ошибка места в секторе '+id);if(seat.width!==undefined&&(!Number.isFinite(seat.width)||seat.width<26||seat.width>20000))throw Error('Ошибка ширины объединённого места в секторе '+id);if(seat.span!==undefined&&(!Number.isInteger(seat.span)||seat.span<1||seat.span>500))throw Error('Ошибка количества позиций объединённого места в секторе '+id);nums.add(seat.number)}}}return true}
 
 // PNG export is independent of current sector/zoom: each populated sector receives one full-size PNG.
 function drawExportCanvas(id,section){
@@ -540,6 +564,10 @@ function drawExportCanvas(id,section){
   ctx.font='14px Arial,sans-serif';ctx.fillStyle='#586a80';ctx.fillText(`${rows.length} рядов · ${all.length} мест`,31,71);
   ctx.font='bold 13px Arial,sans-serif';ctx.fillStyle='#8491a2';ctx.textAlign='right';ctx.fillText('ВЕРХНИЕ РЯДЫ',width-26,71);
   ctx.font='bold 14px Arial,sans-serif';ctx.textAlign='left';
+  verticalStairCuts(section).forEach((cut,i)=>{
+    const x=100+cut+i*VERTICAL_STAIR_GAP-2-minX;
+    canvasStairway(ctx,x,Math.max(78,lowY+shiftY-8),22,Math.max(30,bottomY-lowY-shiftY+16));
+  });
   rows.forEach((row,i)=>{
     const rowY=baseY(i)+shiftY,layout=layouts[i];
     ctx.fillStyle='#3b4f68';ctx.fillText(`Р ${row.label}`,22,rowY+rowLabelOffset(row));
