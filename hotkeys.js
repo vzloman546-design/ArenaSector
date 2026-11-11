@@ -447,7 +447,7 @@
   }
   function zoomScale(factor){
     if(!activeEditor())return false;
-    studio()?.zoomTo?.(Math.max(.35,Math.min(2.5,zoom.edit*factor)));
+    studio()?.zoomTo?.(Math.max(.02,Math.min(2.5,zoom.edit*factor)));
     return true;
   }
   function activeDialogInput(){
