@@ -212,7 +212,7 @@
   $s('studioCancelStairPlace').addEventListener('click',cancelStairPlacement);
   $s('studioPlaceStairLine').addEventListener('click',beginStairPlacement);
   canvas.addEventListener('pointerdown',event=>{
-    if(!placingStair)return;
+    if(!placingStair||event.button!==0)return;
     event.preventDefault();
     event.stopImmediatePropagation();
     const svg=canvas.querySelector('svg[data-coord-shift]');
