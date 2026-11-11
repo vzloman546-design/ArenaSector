@@ -33,7 +33,7 @@
     '<div class="mouse-tip"><strong>Двойной щелчок</strong><span>По креслу или ряду — изменить номер. По пустой области — показать весь сектор.</span></div>'+
     '<div class="mouse-tip"><strong>Колесо</strong><span>Увеличить или уменьшить масштаб относительно курсора. Shift + колесо — горизонтальная прокрутка.</span></div>'+
     '<div class="mouse-tip"><strong>Нажатое колесо</strong><span>Перетащить схему в любом инструменте. Можно также выбрать «Схема» слева.</span></div>'+
-    '<div class="mouse-tip"><strong>Ctrl + щелчок</strong><span>Отметить несколько кресел; Shift + щелчок — диапазон соседних мест. После этого можно объединить места.</span></div>'+
+    '<div class="mouse-tip"><strong>Выделение группы</strong><span>Выбери «Выделить» в верхней панели или нажми правой кнопкой по креслу и выбери «Выделить несколько мест». Затем отмечай кресла обычными кликами. Ctrl и Shift ускоряют выделение.</span></div>'+
     '<div class="mouse-tip"><strong>Боковые кнопки</strong><span>При желании могут отменять и повторять изменения вместо перехода назад/вперёд в браузере. Поддержка зависит от мыши и браузера.</span></div>'+
     '<label class="mouse-toggle"><input type="checkbox" id="mouseSideButtons"><span>Использовать боковые кнопки для отмены и повтора</span></label>'+
     '</div><div class="studio-modal-footer"><button type="button" class="btn primary" id="mouseHelpDone">Готово</button></div>';
@@ -74,6 +74,7 @@
     }else if(type==='seat'){
       entries.push(entry('rename-seat','✎ Изменить номер'));
       entries.push(entry('move-seat','✥ Перетаскивать кресло',{enabled:!disabled}));
+      entries.push(entry('select-multiple','▦ Выделить несколько мест',{enabled:!disabled}));
       entries.push(entry('add-seat','＋ Добавить место в ряд',{enabled:!disabled}));
       entries.push(entry('gap-after','＋ Промежуток после',{enabled:!disabled}));
       entries.push(entry('stair-after','▥ Лестница после места',{enabled:!disabled}));
@@ -99,6 +100,7 @@
       entries.push(entry('add-seat','＋ Добавить место в ряд',{enabled:!!getRow()&&!getRow().locked}));
       entries.push(entry('add-row','＋ Добавить ряд'));
       entries.push(entry('stair-add','▥ Поставить лестницу'));
+      entries.push(entry('select-multiple','▦ Выделить несколько кресел'));
       entries.push(entry('paste','Вставить скопированное'));
       entries.push(entry('fit','Весь сектор'));
       entries.push(entry('working-scale','Рабочий масштаб'));
@@ -156,6 +158,10 @@
       case 'rename-seat':return rename('seat');
       case 'rename-row':return rename('row');
       case 'move-seat':return tools?.setTool?.('move');
+      case 'select-multiple':
+        if(!multiSelectEnabled)$('multiSeatMode').click();
+        if(seat&&row&&!multiSelectedSeatIds.has(seat.id))toggleSeatForMerge(row.id,seat.id);
+        return;
       case 'add-seat':if(row&&!blocked) {selectedRow=row.id;return $('studioAddSeat').click();}return;
       case 'gap-after':if(seat&&!blocked)return $('studioSeatGapAdd').click();return;
       case 'stair-after':if(seat&&!blocked)return $('studioSeatInnerStair').click();return;
