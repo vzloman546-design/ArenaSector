@@ -2,7 +2,8 @@
    Stored as row.stairCuts (raw horizontal coordinates, one list per row). */
 (() => {
   'use strict';
-  const GAP=VERTICAL_STAIR_GAP;
+  const CLEARANCE=STAIR_SEAT_CLEARANCE;
+  const TOTAL_AISLE=VERTICAL_STAIR_WIDTH+2*CLEARANCE;
   const MAX=20;
   const $id=id=>document.getElementById(id);
   const rowCuts=row=>Array.isArray(row?.stairCuts)
@@ -10,21 +11,52 @@
   const chosenRow=()=>getSector().rows.find(r=>r.id===rowChoice)||getRow()||getSector().rows[0]||null;
   let rowChoice=null,placing=false,drag=null;
 
-  // The local aisle only displaces seats in its OWN row.
+  // Preserve source coordinates while giving local stairways the same
+  // 12-unit edge clearance as the outer sector stairs. The historical cut
+  // coordinate remains movable: the correction only changes its default.
   const oldRowLayout=rowStairLayout;
   rowStairLayout=function(row,section){
     const layout=oldRowLayout(row,section),cuts=rowCuts(row);
     if(!cuts.length){layout.rowStairs=[];return layout;}
-    for(const seat of layout.ordered){
+    const ordered=layout.ordered,global=verticalStairCuts(section);
+    const boundaries=cuts.map(cut=>{
+      const onLeft=ordered.filter(seat=>layout.baseX.get(seat.id)+seatWidth(seat)/2<cut);
+      const left=onLeft[onLeft.length-1]||null;
+      const right=ordered.find(seat=>layout.baseX.get(seat.id)+seatWidth(seat)/2>=cut)||null;
+      let addedGap=0,correction=0;
+      if(left&&right){
+        const leftEdge=layout.baseX.get(left.id)+seatWidth(left);
+        const rightEdge=layout.baseX.get(right.id);
+        const existingGap=rightEdge-leftEdge;
+        addedGap=Math.max(0,TOTAL_AISLE-existingGap);
+        const previousDefault=(leftEdge+rightEdge)/2;
+        const normalizedDefault=leftEdge+CLEARANCE-VERTICAL_STAIR_INSET;
+        correction=normalizedDefault-previousDefault;
+      }else if(right){
+        const firstEdge=layout.baseX.get(right.id);
+        const previousDefault=firstEdge-22;
+        const normalizedDefault=firstEdge-VERTICAL_STAIR_WIDTH-CLEARANCE-VERTICAL_STAIR_INSET;
+        correction=normalizedDefault-previousDefault;
+      }else if(left){
+        const lastEdge=layout.baseX.get(left.id)+seatWidth(left);
+        const previousDefault=lastEdge+12;
+        const normalizedDefault=lastEdge+CLEARANCE-VERTICAL_STAIR_INSET;
+        correction=normalizedDefault-previousDefault;
+      }
+      return {raw:cut,addedGap,correction};
+    });
+    for(const seat of ordered){
       const x=layout.baseX.get(seat.id);
-      const displacement=cuts.filter(cut=>x+seatWidth(seat)/2>=cut).length*GAP;
-      layout.displayX.set(seat.id,layout.displayX.get(seat.id)+displacement);
+      const shift=boundaries.reduce((acc,b)=>
+        acc+(x+seatWidth(seat)/2>=b.raw?b.addedGap:0),0);
+      layout.displayX.set(seat.id,layout.displayX.get(seat.id)+shift);
     }
-    const global=verticalStairCuts(section);
-    layout.rowStairs=cuts.map((cut,i)=>({
-      raw:cut,x:cut+global.filter(x=>x<=cut).length*GAP+i*GAP+VERTICAL_STAIR_INSET
+    layout.rowStairs=boundaries.map((b,i)=>({
+      raw:b.raw,
+      x:b.raw+global.filter(x=>x<=b.raw).length*VERTICAL_STAIR_GAP+
+        boundaries.slice(0,i).reduce((sum,entry)=>sum+entry.addedGap,0)+
+        VERTICAL_STAIR_INSET+b.correction
     }));
-    // Reposition preexisting per-position stairways alongside shifted seats.
     layout.stairs=layout.stairs.map(stair=>{
       const left=layout.ordered[stair.after-1],right=layout.ordered[stair.after];
       if(!left||!right)return stair;
@@ -334,9 +366,11 @@
       const expected=49+(getSector().rows.length-1-index)*51+rowLabelOffset(row)+rowVerticalShift(getSector());
       if(Math.abs(p.y-expected)>30){toast('Нажми возле кресел выбранного ряда');return;}
       const shift=Number(svg.dataset.coordShift||0);
-      const options=positionsFor(row),global=verticalStairCuts(getSector()),local=rowCuts(row);
-      const visibleX=x=>x+global.filter(v=>v<=x).length*GAP+
-        local.filter(v=>v<x).length*GAP+VERTICAL_STAIR_INSET;
+      const options=positionsFor(row);
+      const visibleX=x=>{
+        const candidate={...row,stairCuts:[...rowCuts(row),x]};
+        return rowStairLayout(candidate,getSector()).rowStairs.find(stair=>stair.raw===x)?.x??x;
+      };
       const nearest=options.sort((a,b)=>
         Math.abs(visibleX(a.x)+shift-p.x)-Math.abs(visibleX(b.x)+shift-p.x))[0];
       if(nearest&&changeCut(row,nearest.x))cancelPlacing();
