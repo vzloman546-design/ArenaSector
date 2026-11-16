@@ -474,7 +474,7 @@ function rowLabelOffset(row){
 // Fixed-X stairways stay aligned when different rows have different seat counts.
 // Consistent clearance between each staircase edge and seating (SVG and PNG).
 const STAIR_SEAT_CLEARANCE=12;
-const VERTICAL_STAIR_GAP=28;
+const VERTICAL_STAIR_GAP=32;
 const VERTICAL_STAIR_WIDTH=14;
 const VERTICAL_STAIR_INSET=(VERTICAL_STAIR_GAP-VERTICAL_STAIR_WIDTH)/2;
 function verticalStairCuts(section){
@@ -490,7 +490,7 @@ function rowStairLayout(row,section){
   const baseX=new Map();
   let shift=0,markIndex=0;
   for(let i=0;i<ordered.length;i++){
-    if(markIndex<marks.length&&marks[markIndex]===i){shift+=42;markIndex++;}
+    if(markIndex<marks.length&&marks[markIndex]===i){shift+=32;markIndex++;}
     baseX.set(ordered[i].id,ordered[i].x+shift);
   }
   const cuts=verticalStairCuts(section),displayX=new Map();
