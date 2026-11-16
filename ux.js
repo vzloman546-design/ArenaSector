@@ -371,6 +371,18 @@
           }
         }
       }
+
+      // Independent aisle positions must be checked against only their own row.
+      for(const stair of layout.rowStairs||[]){
+        for(const seat of ss){
+          const x=layout.displayX.get(seat.id);
+          if(x<stair.x+VERTICAL_STAIR_WIDTH&&x+seatWidth(seat)>stair.x+3){
+            issues.push({severity:'warning',rowId:row.id,seatId:seat.id,
+              text:'Ряд '+row.label+': лестница ряда пересекает место '+seat.number});
+            break;
+          }
+        }
+      }
     }
     return issues.map(issue=>({...issue,sectorId,text:'Сектор '+sectorId+' · '+issue.text}));
   }
