@@ -472,6 +472,8 @@ function rowLabelOffset(row){
 // Internal stairways split all rows after the same left-to-right seating position.
 // Positions are visual, not stored chair numbers; source coordinates stay unchanged.
 // Fixed-X stairways stay aligned when different rows have different seat counts.
+// Consistent clearance between each staircase edge and seating (SVG and PNG).
+const STAIR_SEAT_CLEARANCE=12;
 const VERTICAL_STAIR_GAP=28;
 const VERTICAL_STAIR_WIDTH=14;
 const VERTICAL_STAIR_INSET=(VERTICAL_STAIR_GAP-VERTICAL_STAIR_WIDTH)/2;
