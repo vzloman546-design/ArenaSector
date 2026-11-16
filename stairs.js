@@ -24,8 +24,8 @@
     const leftSeat=Math.min(...all.map(item=>item.x));
     const rightSeat=Math.max(...all.map(item=>item.x+seatWidth(item.seat)));
     return {
-      left:shift+leftSeat-27,
-      right:shift+rightSeat+12,
+      left:shift+leftSeat-14-STAIR_SEAT_CLEARANCE,
+      right:shift+rightSeat+STAIR_SEAT_CLEARANCE,
       y:Math.max(20,y1),
       height:Math.max(30,y2-Math.max(20,y1)),
       width:14
@@ -90,7 +90,7 @@
     const ctx=canvas.getContext('2d');
     if(!ctx)return canvas;
     for(const side of sides(stairsFor(section))){
-      const x=side==='left'?100+minLeft-minX-29:100+maxRight-minX+15;
+      const x=side==='left'?100+minLeft-minX-14-STAIR_SEAT_CLEARANCE:100+maxRight-minX+STAIR_SEAT_CLEARANCE;
       canvasStairs(ctx,x,y,14,h);
     }
     return canvas;
