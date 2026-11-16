@@ -40,6 +40,38 @@
     ]));
     return 38-top;
   }
+
+  // A row-scoped aisle is a small marker, like a seat, not a 50/58-unit-high
+  // wall. Clip it against seats/stairs in OTHER rows, even if those rows were
+  // manually moved closer together. Never paint over the next row's seats.
+  function segment(section,layouts,rowIndex,stair,exportMode=false){
+    const rows=section.rows,step=exportMode?58:51,origin=exportMode?108:49;
+    const rowBase=i=>origin+(rows.length-1-i)*step;
+    const center=rowBase(rowIndex)+rowLabelOffset(rows[rowIndex]);
+    const x=stair.x, width=VERTICAL_STAIR_WIDTH;
+    let top=center-15,bottom=center+13;
+    rows.forEach((other,i)=>{
+      if(i===rowIndex)return;
+      const otherCenter=rowBase(i)+rowLabelOffset(other);
+      // Keep a visible separation between neighbouring row markers.
+      for(const otherStair of layouts[i].rowStairs||[]){
+        if(x>=otherStair.x+width+2||x+width+2<=otherStair.x)continue;
+        if(otherCenter<center)top=Math.max(top,(center+otherCenter)/2+2);
+        else if(otherCenter>center)bottom=Math.min(bottom,(center+otherCenter)/2-2);
+      }
+      for(const seat of other.seats){
+        const seatX=layouts[i].displayX.get(seat.id);
+        if(x>=seatX+seatWidth(seat)+2||x+width+2<=seatX)continue;
+        const seatY=rowBase(i)+seat.y;
+        // Seat bodies span from center-15 through center+13.
+        if(seatY>=center)bottom=Math.min(bottom,seatY-15-3);
+        else top=Math.max(top,seatY+13+3);
+      }
+    });
+    return bottom-top>=9?{x,y:top,width,height:bottom-top}:null;
+  }
+  window.ArenaRowStairs={segment};
+
   const previousSeatSvg=seatSvg;
   seatSvg=function(kind){
     const section=getSector();
@@ -48,47 +80,29 @@
     const layouts=section.rows.map(row=>rowStairLayout(row,section));
     if(!layouts.some(l=>l.rowStairs.length))return svg;
     const coords=section.rows.flatMap((row,i)=>row.seats.map(seat=>layouts[i].displayX.get(seat.id)));
-    const shift=-Math.min(0,...coords)-(-12)+62; // same coordinate origin as seatSvg
+    const shift=74-Math.min(0,...coords);
     const dy=rowVerticalShift(section);
-    let fragments='';
     section.rows.forEach((row,i)=>{
-      const y=49+(section.rows.length-1-i)*51-25+rowLabelOffset(row)+dy;
+      let fragments='';
       for(const stair of layouts[i].rowStairs){
-        const x=shift+stair.x;
+        const bounds=segment(section,layouts,i,stair);
+        if(!bounds)continue;
+        const x=shift+bounds.x,y=dy+bounds.y;
         fragments+='<g class="row-stairway" data-row-stair-id="'+safeText(row.id)+
           '" data-row-stair-x="'+stair.raw+'" role="button" tabindex="0" '+
           'aria-label="Лестница ряда '+safeText(row.label)+'" style="cursor:ew-resize" pointer-events="all">'+
-          '<rect x="'+x+'" y="'+y+'" width="'+VERTICAL_STAIR_WIDTH+'" height="50" rx="2" fill="#dfeaf6" stroke="#7296b8" stroke-width="1"/>'+
-          stairTreadsSVG(x,y,VERTICAL_STAIR_WIDTH,50)+'</g>';
+          '<title>Лестница ряда '+safeText(row.label)+'</title>'+
+          '<rect x="'+x+'" y="'+y+'" width="'+bounds.width+'" height="'+bounds.height+
+          '" rx="2" fill="#dfeaf6" stroke="#7296b8" stroke-width="1"/>'+
+          stairTreadsSVG(x,y,bounds.width,bounds.height)+'</g>';
       }
+      if(!fragments)return;
+      // Insert before the row's chairs, not at the very end of the SVG.
+      // This also means seats always win if a custom layout gets very tight.
+      const needle='<text class="seat-row-label" data-row="'+row.id+'"';
+      svg=svg.replace(needle,fragments+needle);
     });
-    return svg.replace('</svg>',fragments+'</svg>');
-  };
-
-  const previousExport=drawExportCanvas;
-  drawExportCanvas=function(id,section){
-    const canvas=previousExport(id,section);
-    if(!canvas||!section.rows.some(r=>rowCuts(r).length))return canvas;
-    const layouts=section.rows.map(row=>rowStairLayout(row,section));
-    const coords=section.rows.flatMap((row,i)=>row.seats.map(seat=>({
-      x:layouts[i].displayX.get(seat.id),seat
-    })));
-    const minX=Math.min(0,...coords.map(c=>c.x));
-    const maxX=Math.max(330,...coords.map(c=>c.x+seatWidth(c.seat)));
-    const width=Math.ceil(Math.max(480,maxX-minX+204));
-    const scale=canvas.width/width;
-    const baseY=i=>108+(section.rows.length-1-i)*58;
-    const lowY=Math.min(...section.rows.flatMap((row,i)=>row.seats.map(seat=>baseY(i)+seat.y-17)));
-    const dy=90-lowY,ctx=canvas.getContext('2d');
-    if(!ctx)return canvas;
-    ctx.save();ctx.setTransform(scale,0,0,scale,0,0);
-    section.rows.forEach((row,i)=>{
-      const y=baseY(i)+dy-29+rowLabelOffset(row);
-      for(const stair of layouts[i].rowStairs)
-        canvasStairway(ctx,100+stair.x-minX,y,VERTICAL_STAIR_WIDTH,58);
-    });
-    ctx.restore();
-    return canvas;
+    return svg;
   };
 
   const oldImport=validateImport;
