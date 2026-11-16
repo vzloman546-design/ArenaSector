@@ -642,6 +642,11 @@ function drawExportCanvas(id,section){
     ctx.fillStyle='#3b4f68';ctx.fillText(`Р ${row.label}`,22,rowY+rowLabelOffset(row));
     for(const stair of layout.stairs)
       canvasStairway(ctx,100+stair.x-minX,rowY-29+rowLabelOffset(row),stair.width,58);
+    // Row-scoped stairs are drawn behind chairs, unlike legacy full-height aisles.
+    for(const stair of layout.rowStairs||[]){
+      const rect=window.ArenaRowStairs?.segment(section,layouts,i,stair,true);
+      if(rect)canvasStairway(ctx,100+rect.x-minX,rect.y+shiftY,rect.width,rect.height);
+    }
     row.seats.forEach(seat=>{
       const x=100+layout.displayX.get(seat.id)-minX,y=rowY+seat.y,drawWidth=seatWidth(seat)+3;
       ctx.fillStyle=STANDS[section.stand].color;
