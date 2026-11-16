@@ -41,36 +41,120 @@
     return 38-top;
   }
 
-  // A row-scoped aisle is a small marker, like a seat, not a 50/58-unit-high
-  // wall. Clip it against seats/stairs in OTHER rows, even if those rows were
-  // manually moved closer together. Never paint over the next row's seats.
-  function segment(section,layouts,rowIndex,stair,exportMode=false){
+  // Aisles with the same position in adjacent rows form ONE strip with
+  // uninterrupted rails/treads. Changes of X are joined only if the full
+  // connecting band is clear of all chairs. No per-row rectangle seams.
+  function buildGroups(section,layouts,exportMode=false){
     const rows=section.rows,step=exportMode?58:51,origin=exportMode?108:49;
     const rowBase=i=>origin+(rows.length-1-i)*step;
-    const center=rowBase(rowIndex)+rowLabelOffset(rows[rowIndex]);
-    const x=stair.x, width=VERTICAL_STAIR_WIDTH;
-    let top=center-15,bottom=center+13;
-    rows.forEach((other,i)=>{
-      if(i===rowIndex)return;
-      const otherCenter=rowBase(i)+rowLabelOffset(other);
-      // Keep a visible separation between neighbouring row markers.
-      for(const otherStair of layouts[i].rowStairs||[]){
-        if(x>=otherStair.x+width+2||x+width+2<=otherStair.x)continue;
-        if(otherCenter<center)top=Math.max(top,(center+otherCenter)/2+2);
-        else if(otherCenter>center)bottom=Math.min(bottom,(center+otherCenter)/2-2);
+    const center=i=>rowBase(i)+rowLabelOffset(rows[i]);
+    const seatBoxes=rows.flatMap((row,i)=>row.seats.map(seat=>({
+      x:layouts[i].displayX.get(seat.id),
+      right:layouts[i].displayX.get(seat.id)+seatWidth(seat),
+      top:rowBase(i)+seat.y-15,
+      bottom:rowBase(i)+seat.y+13
+    })));
+    function collision(x,y,margin=1){
+      return seatBoxes.some(seat=>
+        y>seat.top-margin&&y<seat.bottom+margin&&
+        x<seat.right+margin&&x+VERTICAL_STAIR_WIDTH>seat.x-margin);
+    }
+    function canJoin(a,b){
+      if(b.y<=a.y||b.y-a.y>step*1.8||Math.abs(a.x-b.x)>8)return false;
+      for(let y=a.y;y<=b.y;y+=3){
+        const x=a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y);
+        if(collision(x,y))return false;
       }
-      for(const seat of other.seats){
-        const seatX=layouts[i].displayX.get(seat.id);
-        if(x>=seatX+seatWidth(seat)+2||x+width+2<=seatX)continue;
-        const seatY=rowBase(i)+seat.y;
-        // Seat bodies span from center-15 through center+13.
-        if(seatY>=center)bottom=Math.min(bottom,seatY-15-3);
-        else top=Math.max(top,seatY+13+3);
+      return !collision(b.x,b.y);
+    }
+    const groups=[];
+    for(let i=rows.length-1;i>=0;i--){
+      const active=new Set();
+      for(const stair of layouts[i].rowStairs||[]){
+        const node={rowIndex:i,raw:stair.raw,x:stair.x,y:center(i)};
+        const group=groups.find(g=>{
+          const previous=g.members[g.members.length-1];
+          return !active.has(g)&&previous.rowIndex===i+1&&canJoin(previous,node);
+        });
+        if(group){group.members.push(node);active.add(group);}
+        else groups.push({members:[node]});
       }
-    });
-    return bottom-top>=9?{x,y:top,width,height:bottom-top}:null;
+    }
+    return groups.map(group=>{
+      const first=group.members[0],last=group.members[group.members.length-1];
+      let top=first.y-15,bottom=last.y+13;
+      function xAt(y){
+        if(y<=first.y)return first.x;
+        if(y>=last.y)return last.x;
+        for(let i=1;i<group.members.length;i++){
+          const a=group.members[i-1],b=group.members[i];
+          if(y<=b.y)return a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y);
+        }
+        return last.x;
+      }
+      // The end of a staircase must stop before a chair in a neighbouring
+      // row when the aisle changes position at the next row.
+      for(const seat of seatBoxes){
+        if(seat.right+2<=first.x||seat.x-2>=first.x+VERTICAL_STAIR_WIDTH){
+          // Check both endpoints separately (some groups lean by up to 8px).
+          if(seat.right+2<=last.x||seat.x-2>=last.x+VERTICAL_STAIR_WIDTH)
+            continue;
+        }
+        if(seat.bottom<=first.y)top=Math.max(top,seat.bottom+3);
+        if(seat.top>=last.y)bottom=Math.min(bottom,seat.top-3);
+      }
+      if(bottom-top<9)return null;
+      return {...group,top,bottom,xAt};
+    }).filter(Boolean);
   }
-  window.ArenaRowStairs={segment};
+
+  function outlinePoints(group){
+    const first=group.members[0],last=group.members[group.members.length-1];
+    return [
+      {y:group.top,x:first.x},
+      ...group.members.map(m=>({y:m.y,x:m.x})),
+      {y:group.bottom,x:last.x}
+    ];
+  }
+  function stairPath(points,w){
+    const left=points.map(p=>p.x+' '+p.y).join(' L ');
+    const right=[...points].reverse().map(p=>(p.x+w)+' '+p.y).join(' L ');
+    return 'M '+left+' L '+right+' Z';
+  }
+  function svgGroup(group,shift,dy){
+    const w=VERTICAL_STAIR_WIDTH,pts=outlinePoints(group);
+    const translated=pts.map(p=>({x:p.x+shift,y:p.y+dy}));
+    let treads='';
+    for(let y=group.top+10;y<group.bottom-4;y+=14){
+      const x=shift+group.xAt(y);
+      treads+='<line x1="'+(x+2)+'" y1="'+(y+dy)+
+        '" x2="'+(x+w-2)+'" y2="'+(y+dy)+
+        '" stroke="#8c9eae" stroke-width="1" pointer-events="none"/>';
+    }
+    return '<g class="row-stair-visual" pointer-events="none">'+
+      '<path d="'+stairPath(translated,w)+'" fill="#f1f5f9" '+
+      'stroke="#b7c4d1" stroke-width="0.8" stroke-linejoin="round"/>'+
+      treads+'</g>';
+  }
+  function drawGroupsCanvas(ctx,section,layouts,minX,dy){
+    ctx.save();
+    ctx.fillStyle='#f1f5f9';ctx.strokeStyle='#b7c4d1';ctx.lineWidth=.8;
+    for(const group of buildGroups(section,layouts,true)){
+      const pts=outlinePoints(group),w=VERTICAL_STAIR_WIDTH;
+      ctx.beginPath();
+      pts.forEach((p,i)=>i?ctx.lineTo(100+p.x-minX,p.y+dy):ctx.moveTo(100+p.x-minX,p.y+dy));
+      [...pts].reverse().forEach(p=>ctx.lineTo(100+p.x-minX+w,p.y+dy));
+      ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.save();ctx.strokeStyle='#8c9eae';ctx.lineWidth=1;
+      for(let y=group.top+10;y<group.bottom-4;y+=14){
+        const x=100+group.xAt(y)-minX;
+        ctx.beginPath();ctx.moveTo(x+2,y+dy);ctx.lineTo(x+w-2,y+dy);ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  window.ArenaRowStairs={groups:buildGroups,drawCanvas:drawGroupsCanvas};
 
   const previousSeatSvg=seatSvg;
   seatSvg=function(kind){
@@ -82,27 +166,20 @@
     const coords=section.rows.flatMap((row,i)=>row.seats.map(seat=>layouts[i].displayX.get(seat.id)));
     const shift=74-Math.min(0,...coords);
     const dy=rowVerticalShift(section);
-    section.rows.forEach((row,i)=>{
-      let fragments='';
-      for(const stair of layouts[i].rowStairs){
-        const bounds=segment(section,layouts,i,stair);
-        if(!bounds)continue;
-        const x=shift+bounds.x,y=dy+bounds.y;
-        fragments+='<g class="row-stairway" data-row-stair-id="'+safeText(row.id)+
-          '" data-row-stair-x="'+stair.raw+'" role="button" tabindex="0" '+
-          'aria-label="Лестница ряда '+safeText(row.label)+'" style="cursor:ew-resize" pointer-events="all">'+
-          '<title>Лестница ряда '+safeText(row.label)+'</title>'+
-          '<rect x="'+x+'" y="'+y+'" width="'+bounds.width+'" height="'+bounds.height+
-          '" rx="2" fill="#dfeaf6" stroke="#7296b8" stroke-width="1"/>'+
-          stairTreadsSVG(x,y,bounds.width,bounds.height)+'</g>';
-      }
-      if(!fragments)return;
-      // Insert before the row's chairs, not at the very end of the SVG.
-      // This also means seats always win if a custom layout gets very tight.
-      const needle='<text class="seat-row-label" data-row="'+row.id+'"';
-      svg=svg.replace(needle,fragments+needle);
-    });
-    return svg;
+    const groups=buildGroups(section,layouts);
+    const visuals=groups.map(g=>svgGroup(g,shift,dy)).join('');
+    const targets=section.rows.map((row,i)=>{
+      const center=49+(section.rows.length-1-i)*51+rowLabelOffset(row)+dy;
+      return (layouts[i].rowStairs||[]).map(stair=>
+        '<g class="row-stairway" data-row-stair-id="'+safeText(row.id)+
+        '" data-row-stair-x="'+stair.raw+'" role="button" tabindex="0" '+
+        'aria-label="Лестница ряда '+safeText(row.label)+'" style="cursor:ew-resize">'+
+        '<rect x="'+(shift+stair.x)+'" y="'+(center-14)+'" width="'+VERTICAL_STAIR_WIDTH+
+        '" height="28" fill="transparent" pointer-events="all"/></g>').join('');
+    }).join('');
+    // Paint the unified aisle once behind ALL seat groups, then add an
+    // invisible drag target per row. This retains independent editing.
+    return svg.replace('<text class="seat-row-label"',visuals+targets+'<text class="seat-row-label"');
   };
 
   const oldImport=validateImport;
